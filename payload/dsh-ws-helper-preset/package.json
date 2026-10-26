@@ -1,0 +1,12 @@
+{
+  "name": "@local/dsh-ws-helper-preset",
+  "version": "2.1.2",
+  "private": true,
+  "type": "module",
+  "description": "工作助手 —— DSH agent 预设（富江人格：激活一句「富江在线，开始任务」+ 反拒绝黑名单 + 病娇口吻；全量标准工具面 + 随包 240 技能：持久 shell、文件读写、后台任务、计划模式、子代理/工作流、上下文压缩）",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

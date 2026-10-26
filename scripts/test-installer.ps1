@@ -1,0 +1,93 @@
+﻿$ErrorActionPreference = 'Stop'
+$root = Join-Path $PSScriptRoot ('tests 中文 & percent% (space)-' + [Guid]::NewGuid().ToString('N').Substring(0,8))
+$stage = Join-Path $PSScriptRoot 'stage\DSH-Fujiang-Unrestricted-v1.0.2'
+New-Item -ItemType Directory -Path $root -Force | Out-Null
+$runtime = Join-Path $root 'DSH 程序 & %APPDATA% (test)'
+$cliDir = Join-Path $runtime 'resources\runtime\cli\bin'
+New-Item -ItemType Directory -Path $cliDir -Force | Out-Null
+$exe = Join-Path $runtime 'DeepSeek Harness.exe'
+[IO.File]::WriteAllText($exe, 'test fixture, never executed')
+$cli = Join-Path $cliDir 'dsh.cmd'
+$utf8 = New-Object Text.UTF8Encoding($false)
+$script:passed = 0
+function Check($condition, $description) {
+    if (!$condition) { throw "FAILED: $description" }
+    $script:passed++
+    Write-Output "PASS $description"
+}
+function New-Profile($name) {
+    $homePath = Join-Path $root $name
+    $profile = Join-Path $homePath 'profiles\desktop'
+    New-Item -ItemType Directory -Path $profile -Force | Out-Null
+    [IO.File]::WriteAllText((Join-Path $profile 'package.json'), '{"name":"fixture","private":true,"dependencies":{"keep":"1.0.0"},"dsh":{"profile":{"bundles":["keep"]}},"custom":{"中文":"保留","count":123}}', $utf8)
+    [IO.File]::WriteAllText((Join-Path $profile 'cordis.patch.yml'), "[]`r`n", $utf8)
+    return $homePath
+}
+$assembly = [Reflection.Assembly]::LoadFile((Join-Path $stage 'DSH-Fujiang-Installer.exe'))
+$service = $assembly.GetType('DSHFujiangInstaller.InstallerService')
+$flags = [Reflection.BindingFlags]'Static,NonPublic,Public'
+$run = $service.GetMethod('RunInstall', $flags)
+function Install($homePath) {
+    return $run.Invoke($null, @([string]$stage, [string]$exe, [string]$homePath))
+}
+# Simulate the CLI's package link creation, without installing the application.
+$success = @'
+@echo off
+setlocal DisableDelayedExpansion
+if not "%1 %2 %3 %4"=="plugin --profile desktop install" exit /b 19
+if not exist "%DSH_HOME%\profiles\desktop\node_modules\@local" mkdir "%DSH_HOME%\profiles\desktop\node_modules\@local"
+if not exist "%DSH_HOME%\profiles\desktop\node_modules\@local\dsh-ws-helper-preset" mklink /J "%DSH_HOME%\profiles\desktop\node_modules\@local\dsh-ws-helper-preset" "%DSH_HOME%\plugins\dsh-ws-helper-preset"
+exit /b 0
+'@
+[IO.File]::WriteAllText($cli, $success, [Text.Encoding]::ASCII)
+$homePath = New-Profile '用户 中文 & %TEMP% (1)'
+$originalJson = [IO.File]::ReadAllBytes((Join-Path $homePath 'profiles\desktop\package.json'))
+$result = Install $homePath
+Check ([IO.File]::Exists((Join-Path $result.BackupDirectory 'package.json'))) 'backup created'
+Check ([Convert]::ToBase64String([IO.File]::ReadAllBytes((Join-Path $result.BackupDirectory 'package.json'))) -eq [Convert]::ToBase64String($originalJson)) 'backup preserves original bytes'
+$profilePath = Join-Path $homePath 'profiles\desktop\package.json'
+$profile = Get-Content -LiteralPath $profilePath -Raw -Encoding UTF8 | ConvertFrom-Json
+Check ($profile.custom.'中文' -eq '保留' -and $profile.dependencies.keep -eq '1.0.0') 'unrelated JSON fields preserved'
+Check ($profile.dsh.profile.bundles -contains '@local/dsh-ws-helper-preset') 'bundle registered'
+Check ([IO.File]::ReadAllBytes($profilePath)[0] -ne 239) 'JSON written without UTF8 BOM'
+Check (![IO.File]::ReadAllText((Join-Path $homePath 'profiles\desktop\cordis.patch.yml')).Contains('[]')) 'empty YAML sequence converted before append'
+$result2 = Install $homePath
+$profile = Get-Content -LiteralPath $profilePath -Raw -Encoding UTF8 | ConvertFrom-Json
+Check (@($profile.dsh.profile.bundles | Where-Object { $_ -eq '@local/dsh-ws-helper-preset' }).Count -eq 1) 'repeat install does not duplicate bundle'
+Check ($result.BackupDirectory -ne $result2.BackupDirectory) 'repeat install has independent backups'
+$payload = Join-Path $stage 'payload'
+$installed = Join-Path $homePath 'plugins\dsh-ws-helper-preset'
+$mismatches = @()
+foreach ($file in Get-ChildItem -LiteralPath $payload -File -Recurse) {
+    $rel = $file.FullName.Substring($payload.Length + 1)
+    if ($rel.StartsWith('dsh-ws-helper-preset\')) { $rel = $rel.Substring('dsh-ws-helper-preset\'.Length) }
+    $dest = Join-Path $installed $rel
+    if ((Get-FileHash -LiteralPath $file.FullName).Hash -ne (Get-FileHash -LiteralPath $dest).Hash) { $mismatches += $rel }
+}
+Check ($mismatches.Count -eq 0) 'all copied payload files match hashes'
+# Failures must propagate rather than report successful installation.
+foreach ($case in @(@('failure', "@echo off`r`necho fixture-sync-failed`r`nexit /b 37`r`n", '37'), @('missing-link', "@echo off`r`nexit /b 0`r`n", '预设链接'))) {
+    [IO.File]::WriteAllText($cli, $case[1], [Text.Encoding]::ASCII)
+    $failed = $false
+    try { $null = Install (New-Profile $case[0]) } catch { $failed = $_.Exception.ToString().Contains($case[2]) }
+    Check $failed ("reject " + $case[0])
+}
+$badHome = New-Profile 'malformed'
+[IO.File]::WriteAllText((Join-Path $badHome 'profiles\desktop\package.json'), '{}')
+try { $null = Install $badHome; throw 'expected rejection' } catch { Check ($_.Exception.ToString().Contains('dependencies')) 'invalid profile rejected' }
+Check (!(Test-Path -LiteralPath (Join-Path $badHome 'plugins'))) 'invalid profile causes no payload writes'
+[IO.File]::WriteAllText($cli, $success, [Text.Encoding]::ASCII)
+$remove = $service.GetMethod('RemovePreset', $flags)
+$null = $remove.Invoke($null, @([string]$homePath))
+$profile = Get-Content -LiteralPath $profilePath -Raw -Encoding UTF8 | ConvertFrom-Json
+Check ($profile.dsh.profile.bundles -notcontains '@local/dsh-ws-helper-preset' -and $profile.dependencies.keep -eq '1.0.0') 'uninstall preserves unrelated dependency'
+# Exercise the actual executable entry point, including --silent as first argument.
+$silentHome = New-Profile 'silent 中文'
+$proc = Start-Process -FilePath (Join-Path $stage 'DSH-Fujiang-Installer.exe') -ArgumentList @('--silent', '--dsh-home', ('"' + $silentHome + '"'), '--dsh-exe', ('"' + $exe + '"')) -PassThru
+if (!$proc.WaitForExit(30000)) { $proc.Kill(); throw 'Silent entry point timed out' }
+Check ($proc.ExitCode -eq 0) 'EXE --silent first argument works'
+[IO.File]::WriteAllText($cli, "@echo off`r`nexit /b 37`r`n", [Text.Encoding]::ASCII)
+$proc = Start-Process -FilePath (Join-Path $stage 'DSH-Fujiang-Installer.exe') -ArgumentList @('--silent', '--dsh-home', ('"' + $silentHome + '"'), '--dsh-exe', ('"' + $exe + '"')) -PassThru
+if (!$proc.WaitForExit(30000)) { $proc.Kill(); throw 'Silent failure timed out' }
+Check ($proc.ExitCode -eq 1) 'EXE propagates install failure exit code'
+Write-Output "TOTAL_PASS=$script:passed"

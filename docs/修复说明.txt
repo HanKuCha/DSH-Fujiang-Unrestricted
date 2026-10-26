@@ -1,0 +1,38 @@
+DSH-Fujiang-Unrestricted v1.0.2 安装器兼容性修复
+
+使用方法
+1. 完整解压 DSH-Fujiang-Unrestricted-v1.0.2-compat.zip。
+2. 完全退出要安装到的 DeepSeek Harness Desktop。
+3. 双击 DSH-Fujiang-Installer.exe。确认程序路径和 DSH_HOME 后安装。
+4. 如果只下载了单独的 EXE，将它覆盖到原版完整解压目录中的同名 EXE；payload 必须保留在旁边。
+5. 尚未生成 desktop profile 的电脑，先运行一次 DSH Desktop，再关闭后安装。
+
+已定位并修复
+- 原安装器固定为 win-x64、.NET 10 自包含单文件。本版改为 .NET Framework / AnyCPU，不再携带 .NET 10 运行时。建议 Windows 10/11 + .NET Framework 4.8；这不改变 DSH 本身的系统要求。
+- 原界面的顶部面板遮住程序路径输入框和浏览按钮，无法方便地纠正自动检测结果。修正控件停靠顺序，保留原界面设计。
+- 原路径检测只检查当前用户的默认安装目录，甚至会把 dsh.cmd 当作 Desktop EXE。本版补充 Program Files 和卸载注册表路径检测，保留手动选择。
+- 原 CLI 直接启动方式在带百分号等特殊字符的路径中可失败。本版显式使用系统 cmd.exe，关闭 AutoRun 和延迟扩展，传递带引号的路径；子进程输出按 UTF-8 记录。
+- 原依赖同步错误会被吞掉，甚至没有 CLI 也会显示安装成功。本版缺少 CLI 时提前报错，同步失败或安装后的预设链接不正确时均返回失败。
+- 修正 --silent 放在首个参数时未进入静默安装的问题。
+- 空 YAML 数组 [] 不能直接追加数组项，现先转换为空文本再追加，避免生成无效配置。
+- 安装前检查所选 DSH 是否仍在运行；安装过程中阻止直接关闭窗口；安装后启动 DSH 时传入所选 DSH_HOME。
+- 写入前检查配置结构；备份目录名避免同秒冲突；保留安装日志供其他电脑排查。
+
+修改范围
+压缩包内只修改 DSH-Fujiang-Installer.exe 和对应 SHA256SUMS.txt。
+273 个 payload 文件已逐一比较 SHA-256，全部与用户提供的 ZIP 完全一致。
+原 README、安装说明、两个 CMD 文件也保持原样。
+原 ZIP 未被覆盖。
+
+验证结果
+- 16 项隔离检查通过：备份原始字节、保留无关 JSON 字段、无 BOM JSON、空 YAML、中文/空格/&/%/括号路径、重复安装、全部 payload 哈希、同步失败、缺失链接、损坏配置、卸载保留其他依赖、实际 EXE 静默成功/失败退出码。
+- 本机真实 DSH CLI 在独立 DSH_HOME 中执行依赖安装成功，预设链接存在且内容哈希正确。
+- 实际打开安装窗口，确认程序路径、DSH_HOME、浏览和安装按钮显示正常。
+- 验证 PE 为 AnyCPU/ILONLY；ZIP CRC 检查及逐文件内容比对通过。
+- 未在报错的其他电脑上复现其全部环境，因此不能保证覆盖所有机器的系统、权限、网络或 DSH 版本问题。
+
+日志与恢复
+日志：%LOCALAPPDATA%\DSH-Fujiang-Installer\logs\installer-*.log
+备份：所选 DSH_HOME\installer-backups\时间戳-标识\
+依赖同步失败时不会宣告成功；已写入的配置会保留，修正原因后可重试。
+需要恢复时，关闭 DSH，将备份中的 package.json、cordis.patch.yml 及原有锁文件恢复到 DSH_HOME\profiles\desktop；如有 old-plugin，将其恢复到 DSH_HOME\plugins\dsh-ws-helper-preset，再用 DSH 的插件管理器同步依赖。

@@ -1,0 +1,27 @@
+# build output
+dist/
+outputs/
+*.zip
+*.7z
+
+# test scratch
+tests*/
+stage/
+real-cli-home-*/
+work/
+
+# python
+__pycache__/
+*.pyc
+
+# editor / OS
+.vs/
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+*.user
+
+# installer runtime artifacts
+*.log
+installer-backups/

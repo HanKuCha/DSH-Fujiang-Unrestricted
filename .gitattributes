@@ -1,0 +1,10 @@
+# 不做任何行尾归一化。
+# payload 里每个文件的字节必须与发布包 SHA256SUMS.txt 完全一致，
+# 否则从 clone 重建出来的包哈希会和 Release 对不上。
+* -text
+
+*.exe       binary
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.woff2     binary
