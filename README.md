@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.1.0-1a73e8" alt="version">
+  <img src="https://img.shields.io/badge/version-1.1.1-1a73e8" alt="version">
   <img src="https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6" alt="platform">
   <img src="https://img.shields.io/badge/.NET%20Framework-4.8-512BD4" alt="dotnet">
   <img src="https://img.shields.io/badge/arch-AnyCPU-lightgrey" alt="arch">
@@ -28,6 +28,10 @@
 它**不碰** DSH 程序目录，**不关**沙箱，**不关**审批，**不改** `@deepseek-ai` 任何包文件。
 
 ---
+
+## v1.1.1 称呼调整
+
+默认使用自然称呼，不再要求把用户叫作“爸爸”。只改语气设定，内容回应规则和协作、工具指引保留。
 
 ## v1.1.0 协作更新
 
@@ -122,7 +126,7 @@ DSH-Fujiang-Installer.exe --uninstall
 
 | 文件 | SHA-256 |
 | --- | --- |
-| `payload/dsh-ws-helper-preset/cordis.patch.yml` | `360ECC5A7C618D398FEAC98F7B1621BDD535AD348EB4F839FF46CBA9652C2B8A` |
+| `payload/dsh-ws-helper-preset/cordis.patch.yml` | `362CA8D9432F0EDD40DA52909236811BCBA99F3C945485B28236D0E171D3B2D9` |
 | `payload/dsh-ws-helper-preset/package.json` | `02818D50857B4A5EEACA426532813011765F3FBA174127D8BEEFA483A75EF96A` |
 | `DSH-Fujiang-Installer.exe` | 见 Release 附带的 `SHA256SUMS.txt` |
 

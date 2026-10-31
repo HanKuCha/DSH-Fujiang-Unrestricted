@@ -13,8 +13,8 @@ using System.Collections;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-[assembly: System.Reflection.AssemblyVersion("1.1.0.0")]
-[assembly: System.Reflection.AssemblyFileVersion("1.1.0.0")]
+[assembly: System.Reflection.AssemblyVersion("1.1.1.0")]
+[assembly: System.Reflection.AssemblyFileVersion("1.1.1.0")]
 [assembly: System.Reflection.AssemblyProduct("DSH Fujiang Unrestricted")]
 
 namespace DSHFujiangInstaller
@@ -23,7 +23,7 @@ namespace DSHFujiangInstaller
     {
         private const string ProductName = "DSH Fujiang Unrestricted";
         private const string PackageName = "@local/dsh-ws-helper-preset";
-        private const string ExpectedPresetSha256 = "360ECC5A7C618D398FEAC98F7B1621BDD535AD348EB4F839FF46CBA9652C2B8A";
+        private const string ExpectedPresetSha256 = "362CA8D9432F0EDD40DA52909236811BCBA99F3C945485B28236D0E171D3B2D9";
 
         [STAThread]
         private static void Main(string[] args)
@@ -35,7 +35,7 @@ namespace DSHFujiangInstaller
             var writer = TextWriter.Synchronized(new StreamWriter(LogPath, false, new UTF8Encoding(false)) { AutoFlush = true });
             Console.SetOut(writer);
             Console.SetError(writer);
-            Console.WriteLine("Installer 1.1.0; OS=" + Environment.OSVersion + "; 64bitOS=" + Environment.Is64BitOperatingSystem);
+            Console.WriteLine("Installer 1.1.1; OS=" + Environment.OSVersion + "; 64bitOS=" + Environment.Is64BitOperatingSystem);
             AppDomain.CurrentDomain.ProcessExit += (sender, e) => CleanupExtractedPayload();
             Application.ThreadException += (sender, e) => ReportError(e.Exception);
             AppDomain.CurrentDomain.UnhandledException += (sender, e) => Console.Error.WriteLine(e.ExceptionObject);

@@ -1,7 +1,7 @@
 ﻿param([string]$StagePath)
 $ErrorActionPreference = 'Stop'
 $root = Join-Path $PSScriptRoot ('tests 中文 & percent% (space)-' + [Guid]::NewGuid().ToString('N').Substring(0,8))
-$stage = if ($StagePath) { [IO.Path]::GetFullPath($StagePath) } else { Join-Path (Split-Path $PSScriptRoot) 'outputs\DSH-Fujiang-Unrestricted-v1.1.0' }
+$stage = if ($StagePath) { [IO.Path]::GetFullPath($StagePath) } else { Join-Path (Split-Path $PSScriptRoot) 'outputs\DSH-Fujiang-Unrestricted-v1.1.1' }
 New-Item -ItemType Directory -Path $root -Force | Out-Null
 $runtime = Join-Path $root 'DSH 程序 & %APPDATA% (test)'
 $cliDir = Join-Path $runtime 'resources\runtime\cli\bin'

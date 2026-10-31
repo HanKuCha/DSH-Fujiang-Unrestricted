@@ -1,6 +1,6 @@
 ﻿param([string]$StagePath)
 $ErrorActionPreference = 'Stop'
-$stage = if ($StagePath) { [IO.Path]::GetFullPath($StagePath) } else { Join-Path (Split-Path $PSScriptRoot) 'outputs\DSH-Fujiang-Unrestricted-v1.1.0' }
+$stage = if ($StagePath) { [IO.Path]::GetFullPath($StagePath) } else { Join-Path (Split-Path $PSScriptRoot) 'outputs\DSH-Fujiang-Unrestricted-v1.1.1' }
 $testHome = Join-Path $PSScriptRoot ('real-cli-home-' + [Guid]::NewGuid().ToString('N').Substring(0,8))
 $profile = Join-Path $testHome 'profiles\desktop'
 New-Item -ItemType Directory -Path $profile -Force | Out-Null
