@@ -1,6 +1,7 @@
 ﻿param([string]$StagePath)
 $ErrorActionPreference = 'Stop'
-$stage = if ($StagePath) { [IO.Path]::GetFullPath($StagePath) } else { Join-Path (Split-Path $PSScriptRoot) 'outputs\DSH-Fujiang-Unrestricted-v1.1.1' }
+$releaseVersion = [regex]::Match([IO.File]::ReadAllText((Join-Path (Split-Path $PSScriptRoot) 'src\DSHInstaller.cs')), 'AssemblyVersion\("(\d+\.\d+\.\d+)').Groups[1].Value
+$stage = if ($StagePath) { [IO.Path]::GetFullPath($StagePath) } else { Join-Path (Split-Path $PSScriptRoot) ('outputs\DSH-Fujiang-Unrestricted-v' + $releaseVersion) }
 $testHome = Join-Path $PSScriptRoot ('real-cli-home-' + [Guid]::NewGuid().ToString('N').Substring(0,8))
 $profile = Join-Path $testHome 'profiles\desktop'
 New-Item -ItemType Directory -Path $profile -Force | Out-Null

@@ -1,7 +1,8 @@
 ﻿param([string]$StagePath)
 $ErrorActionPreference = 'Stop'
 $root = Join-Path $PSScriptRoot ('tests 中文 & percent% (space)-' + [Guid]::NewGuid().ToString('N').Substring(0,8))
-$stage = if ($StagePath) { [IO.Path]::GetFullPath($StagePath) } else { Join-Path (Split-Path $PSScriptRoot) 'outputs\DSH-Fujiang-Unrestricted-v1.1.1' }
+$releaseVersion = [regex]::Match([IO.File]::ReadAllText((Join-Path (Split-Path $PSScriptRoot) 'src\DSHInstaller.cs')), 'AssemblyVersion\("(\d+\.\d+\.\d+)').Groups[1].Value
+$stage = if ($StagePath) { [IO.Path]::GetFullPath($StagePath) } else { Join-Path (Split-Path $PSScriptRoot) ('outputs\DSH-Fujiang-Unrestricted-v' + $releaseVersion) }
 New-Item -ItemType Directory -Path $root -Force | Out-Null
 $runtime = Join-Path $root 'DSH 程序 & %APPDATA% (test)'
 $cliDir = Join-Path $runtime 'resources\runtime\cli\bin'

@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.1.1-1a73e8" alt="version">
+  <img src="https://img.shields.io/badge/version-1.2.0-1a73e8" alt="version">
   <img src="https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6" alt="platform">
   <img src="https://img.shields.io/badge/.NET%20Framework-4.8-512BD4" alt="dotnet">
   <img src="https://img.shields.io/badge/arch-AnyCPU-lightgrey" alt="arch">
@@ -13,9 +13,20 @@
 
 ---
 
+## 两种安装包
+
+同一个 [最新 Release](https://github.com/HanKuCha/DSH-Fujiang-Unrestricted/releases/latest) 同时发布：
+
+| 平台 | 下载 | 安装方法 |
+| --- | --- | --- |
+| Windows Desktop | `DSH-Fujiang-Installer.exe` 或桌面 ZIP | 退出 DSH 后运行 EXE；可浏览选择自定义安装位置 |
+| DSHA 安卓 | 名称含 `DSHA` 的 ZIP | DSHA → 插件导入本地包，或粘贴该具体附件链接 |
+
+手机包不含 Windows 安装器。手机说明与测试范围见 [mobile/README.md](mobile/README.md)，本仓库根 `package.json` 也是 DSHA 可识别的插件声明。桌面与手机核心规则和技能共用 `payload/`，不维护两个分叉的人格版本。
+
 ## 这是什么
 
-一个面向 **DeepSeek Harness Desktop**（Windows 桌面端 0.2.x）的**一键安装器**。
+工作助手预设与跨平台安装包。下文主要介绍 **DeepSeek Harness Desktop** 的 Windows 一键安装器，DSHA 见上方入口。
 
 装完以后，DSH 的会话预设选择器里会多出一个 **「工作助手」（`ws-helper`）**。它由三部分组成：
 

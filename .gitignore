@@ -25,3 +25,4 @@ desktop.ini
 # installer runtime artifacts
 *.log
 installer-backups/
+node_modules/

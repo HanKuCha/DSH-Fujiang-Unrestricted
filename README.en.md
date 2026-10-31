@@ -24,6 +24,10 @@ does **not** disable approvals, and does **not** modify any `@deepseek-ai` packa
 
 Adds clarification, progress updates, latest-goal handling, DSH tool and subagent guidance, background terminal tools, and three debugging/verification skills. Preserves the original persona and response rules. Upgrades preserve user-added skills. Runtime checks target Desktop 0.2.1-rc.5; this release does not claim to fix kernel message scheduling or add message editing.
 
+## DSHA for Android
+
+The same release includes `DSH-Fujiang-DSHA-v1.2.0.zip`. Import that ZIP in DSHA Plugins, or paste its exact asset URL. No Windows installer files are included. Both adapters are generated from the shared preset and skills; see [mobile instructions](mobile/README.md) for verification limits.
+
 ## Requirements
 
 | | |
