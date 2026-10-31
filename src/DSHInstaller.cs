@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -12,8 +13,8 @@ using System.Collections;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-[assembly: System.Reflection.AssemblyVersion("1.0.2.0")]
-[assembly: System.Reflection.AssemblyFileVersion("1.0.2.0")]
+[assembly: System.Reflection.AssemblyVersion("1.1.0.0")]
+[assembly: System.Reflection.AssemblyFileVersion("1.1.0.0")]
 [assembly: System.Reflection.AssemblyProduct("DSH Fujiang Unrestricted")]
 
 namespace DSHFujiangInstaller
@@ -22,7 +23,7 @@ namespace DSHFujiangInstaller
     {
         private const string ProductName = "DSH Fujiang Unrestricted";
         private const string PackageName = "@local/dsh-ws-helper-preset";
-        private const string ExpectedPresetSha256 = "0B3EB6EC47CF2C1365A0390C8EB5583F57D780794F5D7522B33C7C8C0584878E";
+        private const string ExpectedPresetSha256 = "360ECC5A7C618D398FEAC98F7B1621BDD535AD348EB4F839FF46CBA9652C2B8A";
 
         [STAThread]
         private static void Main(string[] args)
@@ -34,7 +35,8 @@ namespace DSHFujiangInstaller
             var writer = TextWriter.Synchronized(new StreamWriter(LogPath, false, new UTF8Encoding(false)) { AutoFlush = true });
             Console.SetOut(writer);
             Console.SetError(writer);
-            Console.WriteLine("Installer 1.0.2; OS=" + Environment.OSVersion + "; 64bitOS=" + Environment.Is64BitOperatingSystem);
+            Console.WriteLine("Installer 1.1.0; OS=" + Environment.OSVersion + "; 64bitOS=" + Environment.Is64BitOperatingSystem);
+            AppDomain.CurrentDomain.ProcessExit += (sender, e) => CleanupExtractedPayload();
             Application.ThreadException += (sender, e) => ReportError(e.Exception);
             AppDomain.CurrentDomain.UnhandledException += (sender, e) => Console.Error.WriteLine(e.ExceptionObject);
             Application.EnableVisualStyles();
@@ -57,6 +59,47 @@ namespace DSHFujiangInstaller
         }
 
         internal static string LogPath;
+        private static string extractedPackageRoot;
+
+        internal static string ResolvePackageRoot()
+        {
+            if (extractedPackageRoot != null) return extractedPackageRoot;
+            var adjacent = Path.GetFullPath(AppDomain.CurrentDomain.BaseDirectory);
+            if (Directory.Exists(Path.Combine(adjacent, "payload"))) return adjacent;
+            using (var resource = typeof(Program).Assembly.GetManifestResourceStream("DSHFujiang.Payload.zip"))
+            {
+                if (resource == null) throw new InvalidDataException("安装器没有内嵌 payload，请重新下载完整 EXE 或 ZIP。");
+                var tempBase = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "DSH-Fujiang-Installer"));
+                var target = Path.GetFullPath(Path.Combine(tempBase, "payload-" + Guid.NewGuid().ToString("N")));
+                var prefix = target.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+                Directory.CreateDirectory(target);
+                extractedPackageRoot = target;
+                using (var archive = new ZipArchive(resource, ZipArchiveMode.Read))
+                foreach (var entry in archive.Entries)
+                {
+                    var destination = Path.GetFullPath(Path.Combine(target, entry.FullName.Replace('/', Path.DirectorySeparatorChar)));
+                    if (!destination.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                        throw new InvalidDataException("内嵌 ZIP 的路径越界。");
+                    if (string.IsNullOrEmpty(entry.Name)) { Directory.CreateDirectory(destination); continue; }
+                    Directory.CreateDirectory(Path.GetDirectoryName(destination));
+                    using (var input = entry.Open())
+                    using (var output = File.Create(destination)) input.CopyTo(output);
+                }
+                Console.WriteLine("EXTRACT=" + target);
+                return target;
+            }
+        }
+
+        private static void CleanupExtractedPayload()
+        {
+            if (extractedPackageRoot == null) return;
+            var root = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "DSH-Fujiang-Installer")) + Path.DirectorySeparatorChar;
+            var target = Path.GetFullPath(extractedPackageRoot);
+            if (!target.StartsWith(root, StringComparison.OrdinalIgnoreCase)) return;
+            try { Directory.Delete(target, true); }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+        }
 
         internal static void ReportError(Exception error)
         {
@@ -74,7 +117,7 @@ namespace DSHFujiangInstaller
                 var dshExecutable = string.IsNullOrWhiteSpace(dshRoot)
                     ? (ReadOption(args, "--dsh-exe") ?? InstallerService.DefaultDshPath())
                     : Path.Combine(dshRoot, "DeepSeek Harness.exe");
-                var packageRoot = Path.GetFullPath(AppDomain.CurrentDomain.BaseDirectory);
+                var packageRoot = ResolvePackageRoot();
                 Console.WriteLine("START packageRoot=" + packageRoot);
                 Console.WriteLine("START dshHome=" + dshHome);
                 var result = Task.Run(() => InstallerService.RunInstall(packageRoot, dshExecutable, dshHome)).GetAwaiter().GetResult();
@@ -137,7 +180,7 @@ namespace DSHFujiangInstaller
 
         public InstallForm()
         {
-            packageRoot = Path.GetFullPath(AppDomain.CurrentDomain.BaseDirectory);
+            packageRoot = Program.ResolvePackageRoot();
 
             Text = Program.ProductDisplayName + " - 一键安装";
             StartPosition = FormStartPosition.CenterScreen;
@@ -233,7 +276,7 @@ namespace DSHFujiangInstaller
                 BackColor = Color.FromArgb(231, 238, 247),
                 ForeColor = Color.FromArgb(30, 64, 110),
                 Padding = new Padding(10, 8, 10, 6),
-                Text = "将安装 fujiang 人格预设，合并 dsh-unrestricted 交付规则，并自动备份 Desktop profile。",
+                Text = "安装协作版工作助手：主动澄清与汇报、DSH 工具与子代理指引、240 + 3 个技能；自动备份 Desktop profile。",
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
 
@@ -716,10 +759,6 @@ namespace DSHFujiangInstaller
 
         private static void CopySkills(string source, string target)
         {
-            if (Directory.Exists(target))
-            {
-                Directory.Delete(target, true);
-            }
             CopyDirectory(source, target);
         }
 

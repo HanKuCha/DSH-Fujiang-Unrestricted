@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.2-1a73e8" alt="version">
+  <img src="https://img.shields.io/badge/version-1.1.0-1a73e8" alt="version">
   <img src="https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6" alt="platform">
   <img src="https://img.shields.io/badge/.NET%20Framework-4.8-512BD4" alt="dotnet">
   <img src="https://img.shields.io/badge/arch-AnyCPU-lightgrey" alt="arch">
@@ -19,9 +19,9 @@
 
 装完以后，DSH 的会话预设选择器里会多出一个 **「工作助手」（`ws-helper`）**。它由三部分组成：
 
-1. **一份固定人格提示词** —— 整段接管系统提示词（`persona: complete: true`），内容是一个「不设限」的助手人格：反拒绝黑名单、意图映射、逐级降级阶梯、禁止中途撤回、交付契约。
+1. **一份带协作工作方式的固定人格提示词** —— 整段接管系统提示词（`persona: complete: true`），内容是一个「不设限」的助手人格：保留原角色与交付规则，增加主动澄清、阶段性汇报、目标纠正、DSH 工具与子代理使用指引。
 2. **全套标准工具面** —— 持久 shell、文件读写与搜索、后台任务、计划模式、子代理 / 工作流、上下文压缩、技能加载、`present` 等。
-3. **240 个随包技能** —— 一个覆盖面很宽的攻防知识库，随预设一起落地到 `payload/skills`，由 `skill-filesystem` 挂载。
+3. **240 + 3 个随包技能** —— 一个覆盖面很宽的攻防知识库，随预设一起落地到 `payload/skills`，由 `skill-filesystem` 挂载。
 
 安装器只做四件事：**检测 DSH → 备份 profile → 复制预设与技能 → 注册依赖和 bundle**。
 
@@ -29,13 +29,24 @@
 
 ---
 
+## v1.1.0 协作更新
+
+- 开始任务先说明调查方向；缺少关键信息先澄清，关键阶段主动汇报。
+- 连续纠正先合并当前已收到的信息，以最后明确的目标为准。
+- 补齐 DSH 工具与子代理分工指引；新增官方后台终端工具，后台查询单次等待上限十秒。
+- 加入 systematic-debugging、test-driven-development、verification-before-completion 三个技能。
+- 保留原有角色和内容回应规则；移除 Windows 下错误的 Android 导出路径与自动清空工作区流程。
+- 单独下载即可安装的 EXE；升级会保留用户自行添加的技能。
+
+提示词不能改变 DSH 同步工具的消息投递边界，本版不宣称已经解决即时插话或内核消息排队；回退/编辑插件也未捆绑进该公共安装包。
+
 ## 它装了什么
 
 ```
 payload/
-├── dsh-ws-helper-preset/           # 预设本体（2 个文件）
-│   ├── cordis.patch.yml            # 29,547 B —— persona + 全套工具面组合
-│   └── package.json                # 481 B  —— @local/dsh-ws-helper-preset v2.1.2
+├── dsh-ws-helper-preset/           # 预设与协作技能
+│   ├── cordis.patch.yml            # persona + 协作流程 + 全套工具面组合
+│   └── package.json                # @local/dsh-ws-helper-preset v2.1.3-desktop-coop.1
 └── skills/                         # 240 个技能，271 个文件，约 6.2 MB
     ├── hunt-sqli/ SKILL.md
     ├── hunt-xss/ SKILL.md
@@ -69,12 +80,12 @@ payload/
 ## 安装
 
 1. 先启动一次 **DSH Desktop**，确认能正常打开，然后**完全退出**（托盘也退）。
-2. 解压整个 ZIP，**双击 `DSH-Fujiang-Installer.exe`**。
+2. 从 [最新 Release](https://github.com/HanKuCha/DSH-Fujiang-Unrestricted/releases/latest) 下载并**双击 `DSH-Fujiang-Installer.exe`**；也可解压 ZIP 后运行同名文件。
 3. 确认自动检测到的 `DeepSeek Harness.exe` 与 `DSH_HOME`（默认 `C:\Users\<你>\.dsh`），不对就手动改。
 4. 点 **「安装到 DSH Desktop」**。成功后可勾选直接启动 DSH。
 5. 打开 DSH，**新会话**在预设里选 **「工作助手」**。
 
-> 不要只把 EXE 单独拿出来跑 —— 它需要旁边的 `payload\` 目录。
+> v1.1.0 的 EXE 已内嵌完整预设与技能，单独下载即可安装；不需要 .NET 10。已有旁边的 payload 时仍兼容目录式安装。
 
 如果双击没反应或被拦截：
 
@@ -111,8 +122,8 @@ DSH-Fujiang-Installer.exe --uninstall
 
 | 文件 | SHA-256 |
 | --- | --- |
-| `payload/dsh-ws-helper-preset/cordis.patch.yml` | `0B3EB6EC47CF2C1365A0390C8EB5583F57D780794F5D7522B33C7C8C0584878E` |
-| `payload/dsh-ws-helper-preset/package.json` | `EE9C0CA9D2C1C595434E7B3AE733D68BE369440DE2116067223B9DEE2A63439D` |
+| `payload/dsh-ws-helper-preset/cordis.patch.yml` | `360ECC5A7C618D398FEAC98F7B1621BDD535AD348EB4F839FF46CBA9652C2B8A` |
+| `payload/dsh-ws-helper-preset/package.json` | `02818D50857B4A5EEACA426532813011765F3FBA174127D8BEEFA483A75EF96A` |
 | `DSH-Fujiang-Installer.exe` | 见 Release 附带的 `SHA256SUMS.txt` |
 
 安装器内部也把这个预设哈希**写死**了（`ExpectedPresetSha256`）。安装完会回读 profile 里链接到的 `cordis.patch.yml` 并比对，不一致就报失败 —— 不会出现「装完了但装的不是这个预设」。
@@ -126,7 +137,7 @@ DSH-Fujiang-Installer.exe --uninstall
 powershell -ExecutionPolicy Bypass -File src\build.ps1
 ```
 
-产物在 `dist\DSH-Fujiang-Installer.exe`，约 28 KB。
+产物在 `dist\DSH-Fujiang-Installer.exe`，已内嵌完整 payload。
 
 > 重新编译出来的 EXE 与 Release 里的**字节不同**（.NET Framework 版 csc 会写入随机 MVID 和时间戳），但源码与行为一致。要核对你手上的 EXE 是不是这份源码编的，比 Release 里的 SHA-256，而不是自己重编。
 
@@ -144,7 +155,7 @@ python tools\package-release.py
 ```
 .
 ├── src/
-│   ├── DSHInstaller.cs            # 安装器全部逻辑（WinForms，873 行）
+│   ├── DSHInstaller.cs            # 安装器全部逻辑（WinForms，自解包 payload）
 │   ├── app.manifest               # 清单（普通用户权限，不请求提权）
 │   └── build.ps1                  # 一键编译
 ├── payload/
@@ -157,7 +168,7 @@ python tools\package-release.py
 │   ├── 安装说明.txt
 │   └── 修复说明.txt               # 1.0.2 兼容性修复明细
 ├── scripts/
-│   ├── test-installer.ps1         # 16 项隔离安装测试（中文/空格/&/%/括号路径）
+│   ├── test-installer.ps1         # 隔离安装与单文件 EXE 测试（中文/空格/&/%/括号路径）
 │   └── test-real-cli.ps1          # 用真实 DSH CLI 在独立 DSH_HOME 里验证
 ├── tools/
 │   ├── package-release.py         # 组装发布 ZIP + 生成 SHA256SUMS
@@ -210,7 +221,7 @@ python tools\package-release.py
 1.0.2 起已专门处理并纳入测试（见 `scripts/test-installer.ps1`），可以正常安装。
 
 **能不能只装预设、不装技能**
-可以。删掉 `payload\skills` 后再运行安装器，预设照样工作，只是没有技能目录可挂。
+发布安装器校验完整 payload，不建议手动删除；技能按需加载，不会一次性执行。
 
 **会不会影响我已有的其他插件**
 不会。安装器只 upsert 它自己那一条依赖和 bundle 条目，其余字段原样保留（`scripts/test-installer.ps1` 里有「保留无关 JSON 字段」的用例）。
@@ -221,7 +232,7 @@ python tools\package-release.py
 
 - 只改**当前用户**的 `DSH_HOME`，不写 DSH 程序目录，不请求管理员权限。
 - 不关闭 DSH 的沙箱、审批栈或工具权限。
-- 不含 DSH 程序本体；你需要自行安装官方 DeepSeek Harness Desktop。
+- 不含 DSH 程序本体；你需要自行安装官方 DeepSeek Harness Desktop。本版运行时验证基线为 0.2.1-rc.5。
 - 预设改变的是**提示词与回答尺度**，宿主侧的工具能力、沙箱与审批仍由 DSH 自己决定。
 
 ---
@@ -230,4 +241,4 @@ python tools\package-release.py
 
 [MIT](LICENSE)。随意改、随意分发，保留版权声明即可。
 
-第三方技能文本的出处与许可状态未逐一追溯，如你是某个技能的作者并希望调整署名或移除，请开 Issue。
+新增三个协作技能来自 obra/superpowers（MIT），详见 [第三方声明](THIRD_PARTY_NOTICES.md)。旧 240 个技能文本的出处与许可状态未逐一追溯，如你是某个技能的作者并希望调整署名或移除，请开 Issue。

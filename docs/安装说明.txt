@@ -1,17 +1,18 @@
-DSH Fujiang Unrestricted v1.0
+﻿DSH Fujiang Unrestricted v1.1.0
 
 适用：Windows 10/11，DeepSeek Harness Desktop 0.2.x。
 
 安装：
 1. 先启动一次 DSH Desktop，确认它能打开。
-2. 双击 DSH-Fujiang-Installer.exe。
+2. 完全退出 DSH（包括托盘），下载并双击 DSH-Fujiang-Installer.exe。单独的 EXE 已内嵌全部安装文件。
 3. 保持自动检测到的 DeepSeek Harness.exe 和 DSH_HOME，点击“安装到 DSH Desktop”。
 4. 安装完成并启动 DSH 后，新会话选择“工作助手”。
 
 内容：
 - fujiang 人格预设（工作助手，ws-helper）
 - dsh-unrestricted 的交付规则，已合并进同一 persona
-- 240 个随包技能
+- 原 240 个技能 + 3 个排查/验收技能
+- 主动澄清、进度汇报、DSH 工具与子代理工作指引
 - 自动备份 profile，自动禁用重复的独立 fujiang 注入
 
 如果安装器无法启动或误报：

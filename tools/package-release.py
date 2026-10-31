@@ -55,6 +55,8 @@ def main() -> None:
     archive = OUT / f"{root_name}.zip"
 
     if stage.exists():
+        if stage.resolve().parent != OUT.resolve():
+            sys.exit("打包目录不在 outputs 内")
         shutil.rmtree(stage)
     stage.mkdir(parents=True, exist_ok=True)
     OUT.mkdir(parents=True, exist_ok=True)
@@ -71,6 +73,8 @@ def main() -> None:
 
     # 4. 文档
     shutil.copy2(REPO / "README.md", stage / "README.md")
+    shutil.copy2(REPO / "LICENSE", stage / "LICENSE")
+    shutil.copy2(REPO / "THIRD_PARTY_NOTICES.md", stage / "THIRD_PARTY_NOTICES.md")
     install_note = REPO / "docs" / "安装说明.txt"
     if install_note.exists():
         shutil.copy2(install_note, stage / "安装说明.txt")

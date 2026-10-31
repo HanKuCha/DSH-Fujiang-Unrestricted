@@ -24,7 +24,12 @@ Write-Host "编译器：$csc"
 New-Item -ItemType Directory -Path $outDir -Force | Out-Null
 if (Test-Path $outExe) { Remove-Item $outExe -Force }
 
-$args = @(
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$payloadZip = Join-Path $outDir 'payload.zip'
+if (Test-Path -LiteralPath $payloadZip) { Remove-Item -LiteralPath $payloadZip }
+[IO.Compression.ZipFile]::CreateFromDirectory((Join-Path $repo 'payload'), $payloadZip, [IO.Compression.CompressionLevel]::Optimal, $true)
+
+$compilerArgs = @(
     '/nologo',
     '/target:winexe',
     '/platform:anycpu',
@@ -34,11 +39,13 @@ $args = @(
     '/r:System.Drawing.dll',
     '/r:System.Web.Extensions.dll',
     '/r:System.Core.dll',
+    '/r:System.IO.Compression.dll',
+    "/resource:$payloadZip,DSHFujiang.Payload.zip",
     "/out:$outExe",
     $source
 )
 
-& $csc @args
+& $csc @compilerArgs
 if ($LASTEXITCODE -ne 0) { throw "编译失败，退出码 $LASTEXITCODE" }
 if (!(Test-Path $outExe)) { throw "编译未产生 $outExe" }
 

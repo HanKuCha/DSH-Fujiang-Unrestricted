@@ -11,7 +11,7 @@ session preset picker. It bundles three things:
 2. **The full standard tool plane** — persistent shell, file read/write/search,
    background jobs, plan mode, subagents & workflows, context compaction, skill
    loading, `present`.
-3. **240 bundled skills** — a broad offensive-security knowledge library mounted
+3. **240 existing + 3 collaboration skills** — a broad offensive-security knowledge library mounted
    through `skill-filesystem`.
 
 The installer only does four things: **detect DSH → back up the profile → copy the
@@ -19,6 +19,10 @@ preset and skills → register the dependency and bundle entry.**
 
 It does **not** touch the DSH program directory, does **not** disable the sandbox,
 does **not** disable approvals, and does **not** modify any `@deepseek-ai` package file.
+
+## Version 1.1.0
+
+Adds clarification, progress updates, latest-goal handling, DSH tool and subagent guidance, background terminal tools, and three debugging/verification skills. Preserves the original persona and response rules. Upgrades preserve user-added skills. Runtime checks target Desktop 0.2.1-rc.5; this release does not claim to fix kernel message scheduling or add message editing.
 
 ## Requirements
 
@@ -29,17 +33,17 @@ does **not** disable approvals, and does **not** modify any `@deepseek-ai` packa
 | Host | DeepSeek Harness **Desktop 0.2.x**, started at least once |
 | Privileges | Standard user — **no admin required** |
 
-The installer is a 28 KB AnyCPU / ILONLY .NET Framework WinForms binary. It ships no runtime.
+The installer is an AnyCPU / ILONLY .NET Framework WinForms binary with an embedded compressed payload. It ships no runtime.
 
 ## Install
 
 1. Launch DSH Desktop once, confirm it opens, then **fully exit** it (tray included).
-2. Extract the whole ZIP and run **`DSH-Fujiang-Installer.exe`**.
+2. Download **`DSH-Fujiang-Installer.exe`** from the latest release and run it, or extract the ZIP and run the same EXE.
 3. Confirm the detected `DeepSeek Harness.exe` and `DSH_HOME` (default `C:\Users\<you>\.dsh`).
 4. Click **「安装到 DSH Desktop」**.
 5. Open DSH and pick **「工作助手」** in a new session.
 
-Do not run the EXE by itself — it needs the adjacent `payload\` directory.
+Version 1.1.0 runs standalone: the EXE embeds the complete preset and skills. Adjacent payload folders remain supported.
 
 If double-clicking does nothing, run `修复-运行安装器.cmd`, which keeps a console
 window open so you can read the error.
@@ -66,7 +70,7 @@ then re-syncs dependencies through the DSH CLI.
 powershell -ExecutionPolicy Bypass -File src\build.ps1
 ```
 
-Output: `dist\DSH-Fujiang-Installer.exe` (~28 KB), built with the `csc.exe` that ships
+Output: `dist\DSH-Fujiang-Installer.exe` (embedded payload included), built with the `csc.exe` that ships
 with .NET Framework — no SDK needed.
 
 Rebuilt binaries are **byte-different** from the released one (the Framework compiler
@@ -110,3 +114,5 @@ Every step is logged. A failed dependency sync is reported as a failure, never a
 
 Third-party skill texts are bundled without per-file provenance tracing. If you are the
 author of a skill and want attribution changed or the text removed, please open an issue.
+
+New collaboration skills come from obra/superpowers under MIT; see [third-party notices](THIRD_PARTY_NOTICES.md).

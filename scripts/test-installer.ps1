@@ -1,6 +1,7 @@
-﻿$ErrorActionPreference = 'Stop'
+﻿param([string]$StagePath)
+$ErrorActionPreference = 'Stop'
 $root = Join-Path $PSScriptRoot ('tests 中文 & percent% (space)-' + [Guid]::NewGuid().ToString('N').Substring(0,8))
-$stage = Join-Path $PSScriptRoot 'stage\DSH-Fujiang-Unrestricted-v1.0.2'
+$stage = if ($StagePath) { [IO.Path]::GetFullPath($StagePath) } else { Join-Path (Split-Path $PSScriptRoot) 'outputs\DSH-Fujiang-Unrestricted-v1.1.0' }
 New-Item -ItemType Directory -Path $root -Force | Out-Null
 $runtime = Join-Path $root 'DSH 程序 & %APPDATA% (test)'
 $cliDir = Join-Path $runtime 'resources\runtime\cli\bin'
@@ -51,7 +52,11 @@ Check ($profile.custom.'中文' -eq '保留' -and $profile.dependencies.keep -eq
 Check ($profile.dsh.profile.bundles -contains '@local/dsh-ws-helper-preset') 'bundle registered'
 Check ([IO.File]::ReadAllBytes($profilePath)[0] -ne 239) 'JSON written without UTF8 BOM'
 Check (![IO.File]::ReadAllText((Join-Path $homePath 'profiles\desktop\cordis.patch.yml')).Contains('[]')) 'empty YAML sequence converted before append'
+$customSkill = Join-Path $homePath 'plugins\dsh-ws-helper-preset\skills\user-skill\SKILL.md'
+New-Item -ItemType Directory -Force -Path (Split-Path $customSkill) | Out-Null
+[IO.File]::WriteAllText($customSkill, 'user-owned skill', $utf8)
 $result2 = Install $homePath
+Check ([IO.File]::ReadAllText($customSkill) -eq 'user-owned skill') 'upgrade preserves user-added skills'
 $profile = Get-Content -LiteralPath $profilePath -Raw -Encoding UTF8 | ConvertFrom-Json
 Check (@($profile.dsh.profile.bundles | Where-Object { $_ -eq '@local/dsh-ws-helper-preset' }).Count -eq 1) 'repeat install does not duplicate bundle'
 Check ($result.BackupDirectory -ne $result2.BackupDirectory) 'repeat install has independent backups'
@@ -83,11 +88,20 @@ $profile = Get-Content -LiteralPath $profilePath -Raw -Encoding UTF8 | ConvertFr
 Check ($profile.dsh.profile.bundles -notcontains '@local/dsh-ws-helper-preset' -and $profile.dependencies.keep -eq '1.0.0') 'uninstall preserves unrelated dependency'
 # Exercise the actual executable entry point, including --silent as first argument.
 $silentHome = New-Profile 'silent 中文'
-$proc = Start-Process -FilePath (Join-Path $stage 'DSH-Fujiang-Installer.exe') -ArgumentList @('--silent', '--dsh-home', ('"' + $silentHome + '"'), '--dsh-exe', ('"' + $exe + '"')) -PassThru
+$proc = Start-Process -FilePath (Join-Path $stage 'DSH-Fujiang-Installer.exe') -ArgumentList @('--silent', '--dsh-home', ('"' + $silentHome + '"'), '--dsh-exe', ('"' + $exe + '"')) -PassThru -WindowStyle Hidden
 if (!$proc.WaitForExit(30000)) { $proc.Kill(); throw 'Silent entry point timed out' }
 Check ($proc.ExitCode -eq 0) 'EXE --silent first argument works'
 [IO.File]::WriteAllText($cli, "@echo off`r`nexit /b 37`r`n", [Text.Encoding]::ASCII)
-$proc = Start-Process -FilePath (Join-Path $stage 'DSH-Fujiang-Installer.exe') -ArgumentList @('--silent', '--dsh-home', ('"' + $silentHome + '"'), '--dsh-exe', ('"' + $exe + '"')) -PassThru
+$proc = Start-Process -FilePath (Join-Path $stage 'DSH-Fujiang-Installer.exe') -ArgumentList @('--silent', '--dsh-home', ('"' + $silentHome + '"'), '--dsh-exe', ('"' + $exe + '"')) -PassThru -WindowStyle Hidden
 if (!$proc.WaitForExit(30000)) { $proc.Kill(); throw 'Silent failure timed out' }
 Check ($proc.ExitCode -eq 1) 'EXE propagates install failure exit code'
+[IO.File]::WriteAllText($cli, $success, [Text.Encoding]::ASCII)
+$standalone = Join-Path $root 'standalone EXE'
+New-Item -ItemType Directory -Path $standalone | Out-Null
+Copy-Item -LiteralPath (Join-Path $stage 'DSH-Fujiang-Installer.exe') -Destination $standalone
+$standaloneHome = New-Profile 'standalone-home'
+$proc = Start-Process -FilePath (Join-Path $standalone 'DSH-Fujiang-Installer.exe') -ArgumentList @('--silent', '--dsh-home', ('"' + $standaloneHome + '"'), '--dsh-exe', ('"' + $exe + '"')) -PassThru -WindowStyle Hidden
+if (!$proc.WaitForExit(30000)) { $proc.Kill(); throw 'Standalone installer timed out' }
+Check ($proc.ExitCode -eq 0) 'standalone EXE installs without adjacent payload'
+Check ([IO.File]::Exists((Join-Path $standaloneHome 'plugins\dsh-ws-helper-preset\collaboration-skills\systematic-debugging\SKILL.md'))) 'standalone EXE includes collaboration skills'
 Write-Output "TOTAL_PASS=$script:passed"
