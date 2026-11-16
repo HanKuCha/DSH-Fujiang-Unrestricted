@@ -29,6 +29,47 @@ $assembly = [Reflection.Assembly]::LoadFile((Join-Path $stage 'DSH-Fujiang-Insta
 $service = $assembly.GetType('DSHFujiangInstaller.InstallerService')
 $flags = [Reflection.BindingFlags]'Static,NonPublic,Public'
 $run = $service.GetMethod('RunInstall', $flags)
+[IO.File]::WriteAllText($cli, '@exit /b 99')
+$resolve = $service.GetMethod('ResolveDesktopPath', $flags)
+foreach ($candidate in @($runtime, $exe, $cli, ('"' + $runtime + '"'), ($runtime + '\'))) {
+    Check ($resolve.Invoke($null, @([string]$candidate)) -eq $exe) ('resolve Desktop path: ' + $candidate)
+}
+$env:DSH_TEST_INSTALL_ROOT = $runtime
+try {
+    Check ($resolve.Invoke($null, @('%DSH_TEST_INSTALL_ROOT%')) -eq $exe) 'expand environment in install path'
+} finally { Remove-Item Env:DSH_TEST_INSTALL_ROOT }
+$unrelated = Join-Path $runtime 'other.exe'
+[IO.File]::WriteAllText($unrelated, 'unrelated')
+$partial = Join-Path $root 'incomplete install'
+New-Item -ItemType Directory -Path $partial | Out-Null
+[IO.File]::WriteAllText((Join-Path $partial 'DeepSeek Harness.exe'), 'missing CLI')
+foreach ($candidate in @('', (Join-Path $root 'missing'), $unrelated, $partial, (Join-Path $root 'unrelated dsh.cmd'))) {
+    Check ($null -eq $resolve.Invoke($null, @([string]$candidate))) ('reject incomplete or unrelated path: ' + $candidate)
+}
+$oldCurrentDirectory = [Environment]::CurrentDirectory
+[Environment]::CurrentDirectory = $root
+try {
+    $relative = Join-Path (Split-Path $runtime -Leaf) 'DeepSeek Harness.exe'
+    Check ($resolve.Invoke($null, @([string]$relative)) -eq $exe) 'resolve relative Desktop executable'
+} finally { [Environment]::CurrentDirectory = $oldCurrentDirectory }
+$shell = New-Object -ComObject WScript.Shell
+$shortcut = $shell.CreateShortcut((Join-Path $root 'DeepSeek Harness.lnk'))
+$shortcutRuntime = Join-Path $root 'shortcut target'
+New-Item -ItemType Directory -Path (Join-Path $shortcutRuntime 'resources\runtime\cli\bin') -Force | Out-Null
+$shortcutExe = Join-Path $shortcutRuntime 'DeepSeek Harness.exe'
+[IO.File]::WriteAllText($shortcutExe, 'shortcut fixture')
+[IO.File]::WriteAllText((Join-Path $shortcutRuntime 'resources\runtime\cli\bin\dsh.cmd'), '@exit /b 99')
+try {
+    $shortcut.TargetPath = $shortcutExe
+    $shortcut.Save()
+    $shortcutPath = Join-Path $root 'DeepSeek Harness.lnk'
+    $target = $service.GetMethod('ReadShortcutTarget', $flags).Invoke($null, @([string]$shortcutPath))
+    Check ($target -eq $shortcutExe) 'read actual Windows shortcut target'
+    Check ($resolve.Invoke($null, @([string]$target)) -eq $shortcutExe) 'resolve shortcut target to complete Desktop install'
+} finally {
+    [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($shortcut)
+    [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($shell)
+}
 function Install($homePath) {
     return $run.Invoke($null, @([string]$stage, [string]$exe, [string]$homePath))
 }
@@ -142,9 +183,9 @@ $profile = Get-Content -LiteralPath $profilePath -Raw -Encoding UTF8 | ConvertFr
 Check ($profile.dsh.profile.bundles -notcontains '@local/dsh-ws-helper-preset' -and $profile.dependencies.keep -eq '1.0.0') 'uninstall preserves unrelated dependency'
 # Exercise the actual executable entry point, including --silent as first argument.
 $silentHome = New-Profile 'silent 中文'
-$proc = Start-Process -FilePath (Join-Path $stage 'DSH-Fujiang-Installer.exe') -ArgumentList @('--silent', '--dsh-home', ('"' + $silentHome + '"'), '--dsh-exe', ('"' + $exe + '"')) -PassThru -WindowStyle Hidden
+$proc = Start-Process -FilePath (Join-Path $stage 'DSH-Fujiang-Installer.exe') -ArgumentList @('--silent', '--dsh-home', ('"' + $silentHome + '"'), '--dsh-exe', ('"' + $runtime + '"')) -PassThru -WindowStyle Hidden
 if (!$proc.WaitForExit(30000)) { $proc.Kill(); throw 'Silent entry point timed out' }
-Check ($proc.ExitCode -eq 0) 'EXE --silent first argument works'
+Check ($proc.ExitCode -eq 0) 'EXE --silent first argument accepts install directory'
 [IO.File]::WriteAllText($cli, "@echo off`r`nexit /b 37`r`n", [Text.Encoding]::ASCII)
 $proc = Start-Process -FilePath (Join-Path $stage 'DSH-Fujiang-Installer.exe') -ArgumentList @('--silent', '--dsh-home', ('"' + $silentHome + '"'), '--dsh-exe', ('"' + $exe + '"')) -PassThru -WindowStyle Hidden
 if (!$proc.WaitForExit(30000)) { $proc.Kill(); throw 'Silent failure timed out' }
@@ -154,8 +195,8 @@ $standalone = Join-Path $root 'standalone EXE'
 New-Item -ItemType Directory -Path $standalone | Out-Null
 Copy-Item -LiteralPath (Join-Path $stage 'DSH-Fujiang-Installer.exe') -Destination $standalone
 $standaloneHome = New-Profile 'standalone-home'
-$proc = Start-Process -FilePath (Join-Path $standalone 'DSH-Fujiang-Installer.exe') -ArgumentList @('--silent', '--dsh-home', ('"' + $standaloneHome + '"'), '--dsh-exe', ('"' + $exe + '"')) -PassThru -WindowStyle Hidden
+$proc = Start-Process -FilePath (Join-Path $standalone 'DSH-Fujiang-Installer.exe') -ArgumentList @('--silent', '--dsh-home', ('"' + $standaloneHome + '"'), '--dsh-exe', ('"' + $cli + '"')) -PassThru -WindowStyle Hidden
 if (!$proc.WaitForExit(30000)) { $proc.Kill(); throw 'Standalone installer timed out' }
-Check ($proc.ExitCode -eq 0) 'standalone EXE installs without adjacent payload'
+Check ($proc.ExitCode -eq 0) 'standalone EXE accepts CLI path and installs without adjacent payload'
 Check ([IO.File]::Exists((Join-Path $standaloneHome 'plugins\dsh-ws-helper-preset\collaboration-skills\systematic-debugging\SKILL.md'))) 'standalone EXE includes collaboration skills'
 Write-Output "TOTAL_PASS=$script:passed"

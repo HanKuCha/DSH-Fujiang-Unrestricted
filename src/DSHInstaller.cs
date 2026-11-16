@@ -6,6 +6,8 @@ using System.Drawing;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -14,8 +16,8 @@ using System.Collections;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-[assembly: System.Reflection.AssemblyVersion("1.3.0.0")]
-[assembly: System.Reflection.AssemblyFileVersion("1.3.0.0")]
+[assembly: System.Reflection.AssemblyVersion("1.3.1.0")]
+[assembly: System.Reflection.AssemblyFileVersion("1.3.1.0")]
 [assembly: System.Reflection.AssemblyProduct("DSH Fujiang Unrestricted")]
 
 namespace DSHFujiangInstaller
@@ -36,7 +38,7 @@ namespace DSHFujiangInstaller
             var writer = TextWriter.Synchronized(new StreamWriter(LogPath, false, new UTF8Encoding(false)) { AutoFlush = true });
             Console.SetOut(writer);
             Console.SetError(writer);
-            Console.WriteLine("Installer 1.2.0; OS=" + Environment.OSVersion + "; 64bitOS=" + Environment.Is64BitOperatingSystem);
+            Console.WriteLine("Installer " + typeof(Program).Assembly.GetName().Version + "; OS=" + Environment.OSVersion + "; 64bitOS=" + Environment.Is64BitOperatingSystem);
             AppDomain.CurrentDomain.ProcessExit += (sender, e) => CleanupExtractedPayload();
             Application.ThreadException += (sender, e) => ReportError(e.Exception);
             AppDomain.CurrentDomain.UnhandledException += (sender, e) => Console.Error.WriteLine(e.ExceptionObject);
@@ -226,7 +228,7 @@ namespace DSHFujiangInstaller
 
             var pathLabel = new Label
             {
-                Text = "DeepSeek Harness.exe",
+                Text = "DSH Desktop 程序或安装目录",
                 AutoSize = true,
                 Location = new Point(22, 20)
             };
@@ -346,8 +348,8 @@ namespace DSHFujiangInstaller
         {
             using (var dialog = new OpenFileDialog())
             {
-                dialog.Title = "选择 DeepSeek Harness.exe";
-                dialog.Filter = "DeepSeek Harness|DeepSeek Harness.exe|EXE 文件|*.exe";
+                dialog.Title = "选择 DeepSeek Harness.exe 或随附 dsh.cmd";
+                dialog.Filter = "DSH Desktop|DeepSeek Harness.exe;dsh.cmd|所有文件|*.*";
                 dialog.CheckFileExists = true;
                 if (File.Exists(dshPath.Text))
                 {
@@ -380,13 +382,14 @@ namespace DSHFujiangInstaller
                 return;
             }
 
-            var exe = dshPath.Text.Trim();
+            var exe = InstallerService.ResolveDesktopPath(dshPath.Text);
             var home = dshHome.Text.Trim();
-            if (!File.Exists(exe))
+            if (exe == null)
             {
-                MessageBox.Show(this, "没有找到 DSH Desktop 程序，请重新选择 DeepSeek Harness.exe。", Program.ProductDisplayName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(this, "没有找到完整的 DSH Desktop 安装，请选择安装目录、DeepSeek Harness.exe 或随附的 dsh.cmd。", Program.ProductDisplayName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
+            dshPath.Text = exe;
 
             busy = true;
             install.Enabled = false;
@@ -566,13 +569,85 @@ namespace DSHFujiangInstaller
 
         public static string DefaultDshPath()
         {
+            foreach (var candidate in DesktopPathCandidates())
+            {
+                var resolved = ResolveDesktopPath(candidate);
+                if (resolved != null) return resolved;
+            }
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "DeepSeek Harness", "DeepSeek Harness.exe");
+        }
+
+        internal static string ResolveDesktopPath(string value)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(value)) return null;
+                var candidate = value.Trim().Trim('"');
+                if (!File.Exists(candidate) && !Directory.Exists(candidate))
+                    candidate = Environment.ExpandEnvironmentVariables(candidate);
+                var directory = Directory.Exists(candidate) ? candidate : Path.GetDirectoryName(candidate);
+                if (string.IsNullOrWhiteSpace(directory)) return null;
+                directory = Path.GetFullPath(directory);
+                if (string.Equals(Path.GetFileName(candidate), "dsh.cmd", StringComparison.OrdinalIgnoreCase))
+                {
+                    const string cliSuffix = "resources\\runtime\\cli\\bin";
+                    if (!directory.EndsWith(Path.DirectorySeparatorChar + cliSuffix, StringComparison.OrdinalIgnoreCase)) return null;
+                    directory = directory.Substring(0, directory.Length - cliSuffix.Length - 1);
+                }
+                var executable = Path.Combine(directory, "DeepSeek Harness.exe");
+                var cli = Path.Combine(directory, "resources", "runtime", "cli", "bin", "dsh.cmd");
+                if (!File.Exists(executable) || !File.Exists(cli)) return null;
+                if (!Directory.Exists(candidate) && !string.Equals(Path.GetFullPath(candidate), executable, StringComparison.OrdinalIgnoreCase)
+                    && !string.Equals(Path.GetFullPath(candidate), cli, StringComparison.OrdinalIgnoreCase)) return null;
+                return Path.GetFullPath(executable);
+            }
+            catch (ArgumentException) { return null; }
+            catch (NotSupportedException) { return null; }
+            catch (PathTooLongException) { return null; }
+        }
+
+        private static IEnumerable<string> DesktopPathCandidates()
+        {
+            var candidates = new List<string>();
+            foreach (var process in Process.GetProcessesByName("DeepSeek Harness"))
+            using (process)
+            {
+                try { candidates.Add(process.MainModule.FileName); }
+                catch (System.ComponentModel.Win32Exception) { }
+                catch (InvalidOperationException) { }
+            }
+            candidates.AddRange(RegisteredDesktopPaths());
+            foreach (var folder in new[] { Environment.SpecialFolder.Programs, Environment.SpecialFolder.CommonPrograms,
+                Environment.SpecialFolder.DesktopDirectory, Environment.SpecialFolder.CommonDesktopDirectory })
+            {
+                var root = Environment.GetFolderPath(folder);
+                if (!Directory.Exists(root)) continue;
+                string[] shortcuts;
+                try { shortcuts = Directory.GetFiles(root, "*harness*.lnk", SearchOption.AllDirectories); }
+                catch (IOException) { continue; }
+                catch (UnauthorizedAccessException) { continue; }
+                foreach (var shortcut in shortcuts) candidates.Add(ReadShortcutTarget(shortcut));
+            }
             var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            var candidates = new List<string>
+            candidates.AddRange(new[]
             {
                 Path.Combine(local, "Programs", "DeepSeek Harness", "DeepSeek Harness.exe"),
                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "DeepSeek Harness", "DeepSeek Harness.exe"),
                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "DeepSeek Harness", "DeepSeek Harness.exe")
-            };
+            });
+            foreach (var entry in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator))
+            {
+                if (string.IsNullOrWhiteSpace(entry)) continue;
+                var directory = Environment.ExpandEnvironmentVariables(entry.Trim().Trim('"'));
+                candidates.Add(Path.Combine(directory, "DeepSeek Harness.exe"));
+                candidates.Add(Path.Combine(directory, "dsh.cmd"));
+            }
+            return candidates;
+        }
+
+        private static IEnumerable<string> RegisteredDesktopPaths()
+        {
+            var candidates = new List<string>();
             foreach (var hive in new[] { RegistryHive.CurrentUser, RegistryHive.LocalMachine })
             foreach (var view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
             {
@@ -581,27 +656,47 @@ namespace DSHFujiangInstaller
                     using (var root = RegistryKey.OpenBaseKey(hive, view))
                     using (var uninstall = root.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall"))
                     {
-                        if (uninstall == null) continue;
-                        foreach (var name in uninstall.GetSubKeyNames())
+                        foreach (var name in uninstall == null ? new string[0] : uninstall.GetSubKeyNames())
                         using (var key = uninstall.OpenSubKey(name))
                         {
                             if (key == null || !string.Equals(key.GetValue("DisplayName") as string, "DeepSeek Harness", StringComparison.OrdinalIgnoreCase)) continue;
                             var location = key.GetValue("InstallLocation") as string;
                             if (!string.IsNullOrWhiteSpace(location)) candidates.Add(Path.Combine(location.Trim('"'), "DeepSeek Harness.exe"));
+                            var icon = key.GetValue("DisplayIcon") as string;
+                            if (!string.IsNullOrWhiteSpace(icon)) candidates.Add(Regex.Replace(icon, @",\s*-?\d+\s*$", "").Trim().Trim('"'));
                         }
+                    }
+                    using (var root = RegistryKey.OpenBaseKey(hive, view))
+                    using (var app = root.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\App Paths\DeepSeek Harness.exe"))
+                    {
+                        if (app != null) candidates.Add(app.GetValue("") as string);
                     }
                 }
                 catch (System.Security.SecurityException) { }
                 catch (UnauthorizedAccessException) { }
             }
-            foreach (var candidate in candidates)
+            return candidates;
+        }
+
+        internal static string ReadShortcutTarget(string path)
+        {
+            object shell = null;
+            object shortcut = null;
+            try
             {
-                if (File.Exists(candidate))
-                {
-                    return candidate;
-                }
+                var type = Type.GetTypeFromProgID("WScript.Shell");
+                if (type == null) return null;
+                shell = Activator.CreateInstance(type);
+                shortcut = type.InvokeMember("CreateShortcut", BindingFlags.InvokeMethod, null, shell, new object[] { path });
+                return Convert.ToString(shortcut.GetType().InvokeMember("TargetPath", BindingFlags.GetProperty, null, shortcut, null));
             }
-            return candidates[0];
+            catch (COMException) { return null; }
+            catch (TargetInvocationException) { return null; }
+            finally
+            {
+                if (shortcut != null && Marshal.IsComObject(shortcut)) Marshal.FinalReleaseComObject(shortcut);
+                if (shell != null && Marshal.IsComObject(shell)) Marshal.FinalReleaseComObject(shell);
+            }
         }
 
         internal static Task<InstallResult> RunInstallAsync(string packageRoot, string dshExecutable, string dshHome)
@@ -616,13 +711,14 @@ namespace DSHFujiangInstaller
             {
                 throw new InvalidOperationException("DSH_HOME 不能为空。");
             }
-            if (!File.Exists(dshExecutable))
+            var resolvedExecutable = ResolveDesktopPath(dshExecutable);
+            if (resolvedExecutable == null)
             {
-                throw new InvalidOperationException("找不到 DeepSeek Harness.exe：" + dshExecutable);
+                throw new InvalidOperationException("找不到完整的 DSH Desktop 安装，请选择程序目录、DeepSeek Harness.exe 或随附的 dsh.cmd：" + dshExecutable);
             }
 
             dshHome = Path.GetFullPath(dshHome);
-            dshExecutable = Path.GetFullPath(dshExecutable);
+            dshExecutable = resolvedExecutable;
             Console.WriteLine("DSH_HOME=" + dshHome);
             Console.WriteLine("DSH_EXE=" + dshExecutable);
             foreach (var running in Process.GetProcessesByName("DeepSeek Harness"))

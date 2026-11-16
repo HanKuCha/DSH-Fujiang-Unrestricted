@@ -75,6 +75,8 @@ def main() -> None:
     shutil.copy2(REPO / "README.md", stage / "README.md")
     shutil.copy2(REPO / "LICENSE", stage / "LICENSE")
     shutil.copy2(REPO / "THIRD_PARTY_NOTICES.md", stage / "THIRD_PARTY_NOTICES.md")
+    (stage / "docs").mkdir()
+    shutil.copy2(REPO / "docs" / "upstream-sync.md", stage / "docs" / "upstream-sync.md")
     install_note = REPO / "docs" / "安装说明.txt"
     if install_note.exists():
         shutil.copy2(install_note, stage / "安装说明.txt")

@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.3.0-1a73e8" alt="version">
+  <img src="https://img.shields.io/badge/version-1.3.1-1a73e8" alt="version">
   <img src="https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6" alt="platform">
   <img src="https://img.shields.io/badge/.NET%20Framework-4.8-512BD4" alt="dotnet">
   <img src="https://img.shields.io/badge/arch-AnyCPU-lightgrey" alt="arch">
@@ -14,6 +14,8 @@
 ---
 
 ## 两种安装包
+
+**v1.3.1 对照 fujiang-pojia 0.20.13 移植安装路径修复**。自动查找覆盖运行进程、注册表、快捷方式、默认位置与 PATH，可粘贴安装目录、桌面 EXE 或随附 CLI 路径。过程说明和功能差异见 [上游对照](docs/upstream-sync.md)。工作助手预设继续使用 `.coop.7`。
 
 **v1.3.0 已验证 DSH Desktop 0.2.2-rc.1**，修复 `tool-subagent-list-agents ... never started` 导致工作助手无法加载、新建会话失败。Windows 安装包已包含 .coop.7 的补回应与过程清单同步模块。
 
@@ -67,7 +69,7 @@
 payload/
 ├── dsh-ws-helper-preset/           # 预设与协作技能
 │   ├── cordis.patch.yml            # persona + 协作流程 + 全套工具面组合
-│   └── package.json                # @local/dsh-ws-helper-preset v2.1.3-desktop-coop.1
+│   └── package.json                # @local/dsh-ws-helper-preset v2.1.3-desktop-coop.7
 └── skills/                         # 240 个技能，271 个文件，约 6.2 MB
     ├── hunt-sqli/ SKILL.md
     ├── hunt-xss/ SKILL.md
@@ -94,7 +96,7 @@ payload/
 | 宿主 | DeepSeek Harness **Desktop 0.2.x**，已至少启动过一次（生成 `desktop` profile） |
 | 权限 | 普通用户即可；**不需要**管理员 |
 
-> 安装器本身是 **AnyCPU / ILONLY** 的 .NET Framework WinForms 程序，不携带运行时，体积 28 KB。
+> 安装器是 **AnyCPU / ILONLY** 的 .NET Framework WinForms 程序，内嵌预设与技能，约 2.4 MiB。运行时使用系统自带的 .NET Framework 4.8。
 
 ---
 
