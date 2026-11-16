@@ -1,6 +1,8 @@
 # DSH Fujiang Unrestricted
 
-富江 0.20.13 原版功能与可编辑人格，集成收到插话后先回应、再继续任务的协作模块。当前版本为 **1.4.0**，适用于 DeepSeek Harness Desktop 和 DSHA。
+富江 0.20.13 原版功能与可编辑人格，集成收到插话后先回应、再继续任务的协作模块。当前版本为 **1.4.1**，适用于 DeepSeek Harness Desktop 和 DSHA。
+
+1.4.1 增加 REA 6.9 与 WorkBuddy 的 Schema 兼容处理，解决新会话首条消息返回 `11129 invalid_function_parameters`、被网关显示为 503 的问题。处理发生在发给模型的工具说明副本中，REA 的原始参数校验继续生效。
 
 ## 功能
 
@@ -23,7 +25,7 @@
 | 平台 | 下载 | 安装方式 |
 | --- | --- | --- |
 | Windows Desktop | `DSH-Fujiang-Installer.exe` 或桌面 ZIP | 完全退出 DSH 后运行 EXE，选择程序位置与 DSH_HOME |
-| DSHA 安卓 | `DSH-Fujiang-DSHA-v1.4.0.zip` | 在 DSHA 插件管理中导入本地包或使用该具体附件链接 |
+| DSHA 安卓 | `DSH-Fujiang-DSHA-v1.4.1.zip` | 在 DSHA 插件管理中导入本地包或使用该具体附件链接 |
 
 Windows EXE 内嵌完整插件与知识库，使用系统 .NET Framework 4.8。安装过程通过 Desktop 随附 CLI 注册插件。程序位置可填安装文件夹、`DeepSeek Harness.exe` 或随附的 `resources/runtime/cli/bin/dsh.cmd`，支持自定义磁盘与目录。
 

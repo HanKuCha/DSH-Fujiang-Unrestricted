@@ -1,5 +1,7 @@
 # Generated from the shared Fujiang bundle.
 - insert:
+    - id: ws-helper-schema-compat
+      name: 'dsh-fujiang-mobile/schema-compat'
     - id: fujiang-upstream
       name: "dsh-fujiang-mobile"
     - id: ws-helper-communication

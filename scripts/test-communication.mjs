@@ -6,6 +6,7 @@ import {setTimeout as delay} from 'node:timers/promises';
 const task=path.dirname(fileURLToPath(import.meta.url));
 const runtime=process.env.DSH_TEST_RUNTIME || path.join(process.env.LOCALAPPDATA,'Programs/DeepSeek Harness/resources/app.asar/dsh');
 async function pkg(name){const d=runtime+'/node_modules/@deepseek-ai/'+name;const m=JSON.parse(await fs.readFile(d+'/package.json','utf8'));return import(pathToFileURL(path.join(d,m.exports?.['.']?.default??m.main)).href);}
+const runtimeVersion=JSON.parse(await fs.readFile(runtime+'/node_modules/@deepseek-ai/dsh/package.json','utf8')).version;
 const boot=await pkg('dsh-app-boot'),cmdline=await pkg('dsh-cmdline');
 const {SessionId}=await pkg('dsh-session');
 const {LlmAdapter,createUserMessage}=await pkg('dsh-llm');
@@ -80,7 +81,7 @@ async function make(label,preset='ws-helper',parent){
  }});
 }
 async function settle(a){let timer;try{await Promise.race([a.whenIdle(),new Promise((_,reject)=>timer=setTimeout(()=>reject(Error('fixture timeout')),12000))]);}finally{clearTimeout(timer);}const failures=[...a.session.ownEvents()].filter(e=>e.type==='turn/end'&&e.data.reason.kind==='error');assert.equal(failures.length,0,JSON.stringify(failures));}
-const report={runtime:'0.2.2-rc.1',realModelCalls:0,checks:[]};
+const report={runtime:runtimeVersion,realModelCalls:0,checks:[]};
 try{
  for(const label of ['normal','silent','stubborn','delta','parallel','aux-failure','aux-phantom','aux-error']){
   const h=await make(label);const before=auxiliary.length;try{

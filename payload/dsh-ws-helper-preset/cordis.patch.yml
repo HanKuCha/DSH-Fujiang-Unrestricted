@@ -1,5 +1,7 @@
 # Fujiang 0.20.13 with Desktop communication integration.
 - insert:
+    - id: ws-helper-schema-compat
+      name: '@local/dsh-ws-helper-preset/schema-compat'
     - id: fujiang-upstream
       name: "@local/dsh-ws-helper-preset"
     - id: ws-helper-communication

@@ -6,6 +6,7 @@ import {setTimeout as delay} from 'node:timers/promises';
 const task=path.dirname(fileURLToPath(import.meta.url));
 const runtime=process.env.DSH_TEST_RUNTIME || path.join(process.env.LOCALAPPDATA,'Programs/DeepSeek Harness/resources/app.asar/dsh');
 async function pkg(name){const d=runtime+'/node_modules/@deepseek-ai/'+name;const m=JSON.parse(await fs.readFile(d+'/package.json','utf8'));return import(pathToFileURL(path.join(d,m.exports?.['.']?.default??m.main)).href);}
+const runtimeVersion=JSON.parse(await fs.readFile(runtime+'/node_modules/@deepseek-ai/dsh/package.json','utf8')).version;
 const boot=await pkg('dsh-app-boot'),cmdline=await pkg('dsh-cmdline');
 const {SessionId}=await pkg('dsh-session');
 const {LlmAdapter,createUserMessage}=await pkg('dsh-llm');
@@ -187,7 +188,7 @@ try {
   assert(results.every(event=>!event.data.message.isError),JSON.stringify(results));
   checks.push('all-six-upstream-tools-executed-through-native-agent-loop');
   await api('campaigns',{action:'done',id:campaign.item.id,note:'Fixture complete'});
-  const report={runtime:'0.2.2-rc.1',bundle:bundleName,realModelCalls:0,knowledgeEntries:knowledge.total,checks};
+  const report={runtime:runtimeVersion,bundle:bundleName,realModelCalls:0,knowledgeEntries:knowledge.total,checks};
   const reportName = mobile ? 'mobile-runtime-verification.json' : 'upstream-verification.json';
   await fs.writeFile(path.resolve(task,'../outputs/'+reportName),JSON.stringify(report,null,2));
   console.log(JSON.stringify(report));
