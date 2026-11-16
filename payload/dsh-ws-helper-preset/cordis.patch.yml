@@ -4,6 +4,8 @@
       name: '@local/dsh-ws-helper-preset/schema-compat'
     - id: fujiang-upstream
       name: "@local/dsh-ws-helper-preset"
+    - id: ws-helper-todo-reconcile
+      name: '@local/dsh-ws-helper-preset/todo-reconcile'
     - id: ws-helper-communication
       name: '@local/dsh-ws-helper-preset/communication'
     - id: preset-ws-helper

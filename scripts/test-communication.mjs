@@ -33,6 +33,7 @@ class Adapter extends LlmAdapter{
  async *stream(o){
   const aux=o.messages.some(m=>m.source?.kind==='ws-helper-ack-context');
   if(aux){
+   assert(o.messages.some(m=>m.role==='system'&&text(m).includes('## Activation')),'Supplementary reply must inherit the active system prompt');
    assert.equal(o.tools.length,0);assert(!o.toolHistory);assert(!o.sessionId);assert(o.messages.every(m=>m.role==='system'||m.role==='user'));
    const context=JSON.parse(text(o.messages.at(-1))),label=context.newUserMessages;
    auxiliary.push(label);

@@ -166,10 +166,10 @@ $meta.dependencies | Add-Member -NotePropertyName '@local/dsh-ws-helper-preset' 
 $null = Install $localHome
 $meta = Get-Content -LiteralPath $localProfile -Raw -Encoding UTF8 | ConvertFrom-Json
 Check ($meta.dependencies.'@local/dsh-ws-helper-preset' -eq ('link:'+$localPlugin.Replace('\','/'))) 'upgrade preserves existing local maintenance link'
-Check ((Get-Content -LiteralPath $localManifest -Raw -Encoding UTF8 | ConvertFrom-Json).version -eq '2.1.3-desktop-coop.13') 'existing local maintenance copy upgraded to current payload'
+Check ((Get-Content -LiteralPath $localManifest -Raw -Encoding UTF8 | ConvertFrom-Json).version -eq '2.1.3-desktop-coop.15') 'existing local maintenance copy upgraded to current payload'
 Check (!(Test-Path -LiteralPath (Join-Path $localHome 'plugins\dsh-ws-helper-preset'))) 'no duplicate shared preset created for existing local link'
 $meta = Get-Content -LiteralPath $localManifest -Raw -Encoding UTF8 | ConvertFrom-Json
-$meta.version='2.1.3-desktop-coop.14'
+$meta.version='2.1.3-desktop-coop.16'
 [IO.File]::WriteAllText($localManifest,($meta | ConvertTo-Json -Depth 20),$utf8)
 $beforeVersionHash=(Get-FileHash -LiteralPath $localManifest).Hash
 $rejected=$false

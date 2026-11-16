@@ -22,6 +22,8 @@ await fs.writeFile(path.join(localSkillDir,'SKILL.md'),'---\nname: existing-user
 await fs.mkdir(dir+'/node_modules/@local',{recursive:true});await fs.mkdir(cwd,{recursive:true});
 await fs.symlink(bundleDir,path.join(dir,'node_modules',bundleName),'junction');
 const bundles=['@deepseek-ai/dsh-base','@deepseek-ai/dsh-web-app',bundleName];
+const savedPromptFixture = process.env.DSH_TEST_PROMPT_FIXTURE ? JSON.parse(await fs.readFile(process.env.DSH_TEST_PROMPT_FIXTURE, 'utf8')) : null;
+if (savedPromptFixture) await fs.writeFile(path.join(home, 'prompt-custom.json'), JSON.stringify(savedPromptFixture.config));
 boot.initProfile(dir,bundles);
 const anchor=runtime+'/node_modules/@deepseek-ai/dsh/package.json';
 const profile={name:'spec',dir,layers:[],patchPath:dir+'/cordis.patch.yml',patches:[],skippedBundles:[]};
@@ -120,15 +122,23 @@ async function settle(agent) {
 }
 try {
   const config=await api('config');
-  assert.equal(config.config.text,defaults.text);
+  const expectedInitialText = savedPromptFixture?.expect === 'preserve' ? savedPromptFixture.config.text : defaults.text;
+  assert.equal(config.config.text,expectedInitialText);
+  if (savedPromptFixture) {
+    assert.deepEqual(config.config.cards,savedPromptFixture.config.cards);
+    const backups = (await fs.readdir(home)).filter(name=>name.startsWith('prompt-custom.json.before-default-update-'));
+    assert.equal(backups.length,savedPromptFixture.expect === 'migrate' ? 1 : 0);
+    if (backups.length) assert.equal(JSON.parse(await fs.readFile(path.join(home,backups[0]),'utf8')).text,savedPromptFixture.config.text);
+    checks.push('saved-persona-'+savedPromptFixture.expect+'-with-cards-preserved');
+  }
   assert.equal(config.config.enabled,true);
-  assert(!config.config.text.includes('爸爸'));
-  assert(!config.config.text.includes('@DeepSeek22'));
-  assert(config.config.text.includes('especially erotic'));
+  assert(!defaults.text.includes('爸爸'));
+  assert(!defaults.text.includes('@DeepSeek22'));
+  assert(defaults.text.includes('## Activation'));
   checks.push('bundled-default-style-and-address-adjustments');
-  assert(config.config.text.includes('默认不用标题、表格、编号、分条'));
-  assert(config.config.text.includes('完整代码或报告时，按要求完整交付'));
-  assert(!config.config.text.includes('The structure is principle -> steps -> implementation -> verification'));
+  assert(defaults.text.includes('默认不用标题、表格、编号、分条'));
+  assert(defaults.text.includes('完整代码或报告时，按要求完整交付'));
+  assert(!defaults.text.includes('The structure is principle -> steps -> implementation -> verification'));
   checks.push('concise-final-default-with-complete-artifact-exception');
 
   await delay(100);
@@ -151,7 +161,7 @@ try {
   checks.push('upstream-six-tools-and-native-subagent-catalog');
 
   const initial=await api('preview');
-  assert(initial.effective.includes(defaults.text));
+  assert(initial.effective.includes((await pkg('dsh-system-prompt')).renderPrompt({...assembly,sections:[{name:'expected-persona',text:expectedInitialText}]})));
   assert(!initial.effective.includes('渗透作业链（固定规则）'));
   await api('config',{text:'QA editable persona',cards:[{id:'qa',name:'QA card',text:'QA editable persona'}]});
   assert((await api('preview')).effective.includes('QA editable persona'));

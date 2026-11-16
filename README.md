@@ -1,6 +1,8 @@
 # DSH Fujiang Unrestricted
 
-富江 0.20.13 原版功能与可编辑人格，集成收到插话后先回应、再继续任务的协作模块。当前版本为 **1.4.2**，适用于 DeepSeek Harness Desktop 和 DSHA。
+富江 0.20.13 原版功能与可编辑人格，集成收到插话后先回应、再继续任务的协作模块。当前版本为 **1.4.3**，适用于 DeepSeek Harness Desktop 和 DSHA。
+
+1.4.3 恢复本项目旧版默认人格与“自检”回应，结合上游功能面板、知识库和技能管理。补回应继承主助手系统提示词，恢复任务清单实时核对，并补充 REA 参数调用说明。已知旧默认文字会先备份再更新，用户自定义文字按原配置保留。
 
 1.4.2 调整日常回答和最终汇总，默认用一个简短自然段直接说明结果与关键理由，详细分析、表格和清单按用户要求展开。执行过程的沟通提醒会持续带上这一偏好。
 
@@ -16,7 +18,7 @@
 - 技能面板支持按需安装、启停和删除 REA、AboutSecurity。
 - 模型收到真人插话后若直接调用工具，协作模块会先补充可见回应，再继续原调用。用户停止与目标纠正会取消过期的补回应。
 
-人格、面板、知识分类、报告、任务编排与技能管理采用 fujiang-pojia 的中文 0.20.13。默认人格去掉“爸爸”称呼和 TG 频道前缀，保留原版情色语气。默认文案位于 `payload/dsh-ws-helper-preset/upstream/default-prompt.json`，可通过提示词面板编辑。
+面板、知识分类、报告、任务编排与技能管理采用 fujiang-pojia 的中文 0.20.13。默认人格沿用本项目 v1.3.1，集成简短回复要求；补回应继承当前助手的系统提示词，任务清单按阶段核对进度。默认文案位于 `payload/dsh-ws-helper-preset/upstream/default-prompt.json`，可通过提示词面板编辑。
 
 来源、移植改动与验证范围见 [上游同步记录](docs/upstream-sync.md)。完整上游 fork 保存在 [HanKuCha/fujiang-pojia](https://github.com/HanKuCha/fujiang-pojia)。
 
@@ -27,7 +29,7 @@
 | 平台 | 下载 | 安装方式 |
 | --- | --- | --- |
 | Windows Desktop | `DSH-Fujiang-Installer.exe` 或桌面 ZIP | 完全退出 DSH 后运行 EXE，选择程序位置与 DSH_HOME |
-| DSHA 安卓 | `DSH-Fujiang-DSHA-v1.4.2.zip` | 在 DSHA 插件管理中导入本地包或使用该具体附件链接 |
+| DSHA 安卓 | `DSH-Fujiang-DSHA-v1.4.3.zip` | 在 DSHA 插件管理中导入本地包或使用该具体附件链接 |
 
 Windows EXE 内嵌完整插件与知识库，使用系统 .NET Framework 4.8。安装过程通过 Desktop 随附 CLI 注册插件。程序位置可填安装文件夹、`DeepSeek Harness.exe` 或随附的 `resources/runtime/cli/bin/dsh.cmd`，支持自定义磁盘与目录。
 

@@ -45,6 +45,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { createHash } from 'node:crypto';
 import { createSkillLibrary } from './skills.js';
 import { createAboutSecuritySkillLibrary } from './aboutsecurity.js';
 import { createKnowledgeLibrary } from './knowledge.js';
@@ -318,7 +319,17 @@ export function apply(ctx, config) {
   const warn = (msg) => { try { ctx.logger?.warn?.(msg); } catch { console.warn(msg); } };
 
   const bundledDefaults = JSON.parse(fs.readFileSync(new URL('../default-prompt.json', import.meta.url), 'utf8'));
-  let live = normalize({ ...bundledDefaults, ...(config || {}), ...(readFileConfig() || {}) });
+  let savedConfig = readFileConfig();
+  const previousDefaults = JSON.parse(fs.readFileSync(new URL('../previous-default-sha256.json', import.meta.url), 'utf8'));
+  if (savedConfig && typeof savedConfig.text === 'string' && previousDefaults.includes(createHash('sha256').update(savedConfig.text).digest('hex'))) {
+    const updated = { ...savedConfig, text: bundledDefaults.text };
+    try {
+      fs.copyFileSync(configPath(), configPath() + '.before-default-update-' + Date.now() + '.bak', fs.constants.COPYFILE_EXCL);
+      writeFileConfig(updated);
+      savedConfig = updated;
+    } catch (error) { warn('[dsh-prompt-custom] 默认提示词更新失败：' + String(error?.message || error)); }
+  }
+  let live = normalize({ ...bundledDefaults, ...(config || {}), ...(savedConfig || {}) });
   let lastError = null;                 // 最近一次注入失败的内核原文；null = 无错误
   const entries = new Map();            // agent -> { shape: 'off'|'append'|'replace', fiber }
   let lastAgent = null;                 // 供 /preview 选作用域

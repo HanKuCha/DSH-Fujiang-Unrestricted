@@ -1,10 +1,10 @@
 # Third-party notices
 
-The plugin implementation, client, bundled knowledge and default prompt originate from fujiang-pojia 0.20.13, commit `338b598386aed60d4e7bdbf60ebb526af0b47697`.
+The plugin implementation, client and bundled knowledge originate from fujiang-pojia 0.20.13, commit `338b598386aed60d4e7bdbf60ebb526af0b47697`.
 
 The preserved source is available at [HanKuCha/fujiang-pojia](https://github.com/HanKuCha/fujiang-pojia/tree/upstream-0.20.13). The implementation is included in `payload/dsh-ws-helper-preset/upstream`, with its original MIT license at `upstream/LICENSE`.
 
-Local adaptations cover package/module identifiers, host SDK resolution, communication integration, campaign scheduling and lifecycle, the runtime version label, and the default prompt's form of address and channel branding. The communication module and Windows installer are maintained in this repository.
+Local adaptations cover package/module identifiers, host SDK resolution, communication integration, campaign scheduling and lifecycle, the runtime version label, and the default prompt's form of address and channel branding. The default prompt is based on this project's v1.3.1 text with reply-format and tool-contract guidance. The communication module and Windows installer are maintained in this repository.
 
 ## Original MIT notice
 
