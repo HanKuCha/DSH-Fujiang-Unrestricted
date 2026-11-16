@@ -8,6 +8,7 @@ const textOf = message => (message?.content ?? []).filter(block => block.type ==
 const message = (role, text) => ({ id: randomUUID(), role, source: { kind: 'ws-helper-ack-context' }, content: [{ type: 'text', text }] });
 const visible = chunk => (chunk.type === 'text-delta' && chunk.text.trim()) || (chunk.type === 'block-end' && chunk.block.type === 'text' && chunk.block.text.trim());
 const toolChunk = chunk => chunk.type === 'tool-call-delta' || (chunk.type === 'block-start' && chunk.blockType === 'tool-call') || (chunk.type === 'block-end' && chunk.block.type === 'tool-call');
+const responsePreference = "只回答用户当前问的问题。日常判断与最终汇总通常用两三句话、约80至150个汉字，一个简短自然段：先直接回答，再只选一条决定性理由；有必要的未完成项或用户操作，再补一句。更多信息等用户追问。只保留能改变用户当前判断的信息。资料里的账号数、端口、参数、功能清单、研究过程等细节留在资料中。默认不用标题、表格、编号、分条和重复总结。示例只演示篇幅：用户问“修好了吗”，答“已修好，启动和新建会话都通过了验证。你可以继续使用。”实际结果以证据为准。用户明确索要详细分析、表格、清单、操作步骤、完整代码或报告时，按要求完整交付。";
 
 function mergeUsage(main, extra) {
   if (!extra) return main;
@@ -48,7 +49,7 @@ export async function apply(ctx) {
     state.notices.clear();
     return { ...decision, messages: [...decision.messages, {
       id: randomUUID(), role: 'user', source: { kind: 'ws-helper-communication' },
-      content: [{ type: 'text', text: `[工作助手沟通检查]\n${reason}\n不改变用户目标，不按时间或次数汇报，不编造进展；阶段说明后继续原任务。` }],
+      content: [{ type: 'text', text: `[工作助手沟通检查]\n${reason}\n不改变用户目标，不按时间或次数汇报，不编造进展；阶段说明后继续原任务。\n${responsePreference}` }],
     }] };
   });
 

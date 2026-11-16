@@ -126,6 +126,10 @@ try {
   assert(!config.config.text.includes('@DeepSeek22'));
   assert(config.config.text.includes('especially erotic'));
   checks.push('bundled-default-style-and-address-adjustments');
+  assert(config.config.text.includes('默认不用标题、表格、编号、分条'));
+  assert(config.config.text.includes('完整代码或报告时，按要求完整交付'));
+  assert(!config.config.text.includes('The structure is principle -> steps -> implementation -> verification'));
+  checks.push('concise-final-default-with-complete-artifact-exception');
 
   await delay(100);
   const knowledge=await api('knowledge');
