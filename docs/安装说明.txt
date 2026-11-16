@@ -1,36 +1,18 @@
-DSH Fujiang Unrestricted v1.3.1
+DSH Fujiang Unrestricted v1.4.0
 
-适用：Windows 10/11，DeepSeek Harness Desktop 0.2.x。
+Windows Desktop 安装
+1. 先启动一次 DSH，完成 Desktop profile 初始化。
+2. 完全退出 DSH，包括托盘进程。
+3. 运行 DSH-Fujiang-Installer.exe，选择程序位置与 DSH_HOME。
+4. 程序位置可填写安装目录、DeepSeek Harness.exe 或随附 dsh.cmd。
+5. 点击安装，完成后启动 DSH。
+6. 在输入区找到“富江破甲”开关和设置入口。
 
-安装：
-1. 先启动一次 DSH Desktop，确认它能打开。
-2. 完全退出 DSH（包括托盘），下载并双击 DSH-Fujiang-Installer.exe。单独的 EXE 已内嵌全部安装文件。
-3. 保持自动检测到的 DeepSeek Harness.exe 和 DSH_HOME，点击“安装到 DSH Desktop”。
-4. 安装完成并启动 DSH 后，新会话选择“工作助手”。
+本版采用中文富江 0.20.13 的可编辑人格、知识库、报告、任务编排与按需技能管理，集成插话回应。
+默认人格去掉“爸爸”称呼与 TG 前缀，保留原版情色语气。
 
-修复旧安装后的启动错误：
-- 如果错误指向 cordis.patch.yml 中 [] 后的 - id: fujiang，请退出 DSH（包括报错窗口和托盘），重新运行 v1.3.1 安装器。
-- 本版会备份并修复这类无效空列表前缀，保留其他配置和会话。不需要卸载或重装 DSH。
+升级会备份 profile 和旧插件目录，并保留现有维护链接。
+已有 prompt-custom.json 配置优先生效，可在提示词面板修改。
+安装器日志位于本机 LocalAppData 下 DSH-Fujiang-Installer/logs。
 
-内容：
-- fujiang 人格预设（工作助手，ws-helper）
-- dsh-unrestricted 的交付规则，已合并进同一 persona
-- 原 240 个技能 + 3 个排查/验收技能
-- 主动澄清、进度汇报、DSH 工具与子代理工作指引
-- 自动备份 profile，自动禁用重复的独立 fujiang 注入
-
-如果安装器无法启动或误报：
-- 双击“修复-运行安装器.cmd”
-- 该脚本会从当前目录调用安装器，并保留命令行窗口显示错误
-
-卸载：
-- 在安装器窗口启动时传入 --uninstall；或双击“卸载-工作助手预设.cmd”。
-- 卸载会先备份 profile，再移除本预设。
-
-注意：
-- 本包只改当前用户的 DSH_HOME，不修改 DSH 安装目录。
-- 如果使用非默认 DSH_HOME，请在安装器中手动选择。
-- 规则只影响提示词和回答尺度，不关闭 DSH 的沙箱、审批或工具权限。
-
-
-安装路径可填写程序安装目录、DeepSeek Harness.exe 或随附的 resources\runtime\cli\bin\dsh.cmd。自动识别会优先检查运行进程、注册表和快捷方式，再检查默认位置与 PATH。
+DSHA 用户请下载同一 Release 中名称含 DSHA 的 ZIP，通过手机插件导入入口安装。

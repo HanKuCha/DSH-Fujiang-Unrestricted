@@ -21,7 +21,9 @@ function mergeUsage(main, extra) {
 export async function apply(ctx) {
   const { isAgentLoopRequest } = await import(pathToFileURL(createRequire(ctx.profileContext.installAnchor).resolve('@deepseek-ai/dsh-llm')).href);
   const states = new Map();
-  const helper = agent => !agent.session.header.parentSession && ctx.agentPresets.composedPreset(agent.ctx) === 'ws-helper';
+  const helper = agent => !agent.session.header.parentSession && (
+    ctx.agentPresets.composedPreset(agent.ctx) === 'ws-helper' || ctx.get('fujiangPromptState')?.enabled
+  );
 
   ctx.on('agent/pre-step', async ({ agent, messages, signal }, next) => {
     const decision = await next();

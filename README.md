@@ -1,267 +1,78 @@
-<p align="center">
-  <strong>DSH Fujiang Unrestricted</strong><br>
-  <em>DeepSeek Harness Desktop 一键安装包：富江人格预设 + 240 个随包技能</em>
-</p>
+# DSH Fujiang Unrestricted
 
-<p align="center">
-  <img src="https://img.shields.io/badge/version-1.3.1-1a73e8" alt="version">
-  <img src="https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6" alt="platform">
-  <img src="https://img.shields.io/badge/.NET%20Framework-4.8-512BD4" alt="dotnet">
-  <img src="https://img.shields.io/badge/arch-AnyCPU-lightgrey" alt="arch">
-  <img src="https://img.shields.io/badge/license-MIT-green" alt="license">
-</p>
+富江 0.20.13 原版功能与可编辑人格，集成收到插话后先回应、再继续任务的协作模块。当前版本为 **1.4.0**，适用于 DeepSeek Harness Desktop 和 DSHA。
 
----
+## 功能
 
-## 两种安装包
+- 输入区提供“富江破甲”开关与设置入口。
+- 提示词面板支持编辑正文、追加或替换模式、提示词卡片与实际生效预览。保存后的正文在下一次装配生效，开关即时生效。
+- 内置知识库含九个分类、167 条记录，可在面板查看、启停，并通过技能目录按需加载。
+- 漏洞报告支持持久化保存、严重度筛选、状态更新和 Markdown 导出。
+- 任务面板支持创建、绑定会话、阶段进度、目标完成标记和自动续跑。
+- 技能面板支持按需安装、启停和删除 REA、AboutSecurity。
+- 模型收到真人插话后若直接调用工具，协作模块会先补充可见回应，再继续原调用。用户停止与目标纠正会取消过期的补回应。
 
-**v1.3.1 对照 fujiang-pojia 0.20.13 移植安装路径修复**。自动查找覆盖运行进程、注册表、快捷方式、默认位置与 PATH，可粘贴安装目录、桌面 EXE 或随附 CLI 路径。过程说明和功能差异见 [上游对照](docs/upstream-sync.md)。工作助手预设继续使用 `.coop.7`。
+人格、面板、知识分类、报告、任务编排与技能管理采用 fujiang-pojia 的中文 0.20.13。默认人格去掉“爸爸”称呼和 TG 频道前缀，保留原版情色语气。默认文案位于 `payload/dsh-ws-helper-preset/upstream/default-prompt.json`，可通过提示词面板编辑。
 
-**v1.3.0 已验证 DSH Desktop 0.2.2-rc.1**，修复 `tool-subagent-list-agents ... never started` 导致工作助手无法加载、新建会话失败。Windows 安装包已包含 .coop.7 的补回应与过程清单同步模块。
-
-新版安装器保留现有本地维护目录的链接并拒绝预设降级。请重新下载本 Release 的 EXE；已下载的 v1.2.x 旧安装器不会自动获得这项保护，仍可能把本地维护版切回旧包。
-
-**v1.2.1 修复 Desktop 新装后无法启动的问题**：如果报错指向 `cordis.patch.yml` 中 `[]` 后的 `- id: fujiang`，完全退出 DSH 后重新运行本版 EXE 即可修复，无需删除会话或重装 DSH。手机包保持 v1.2.0。
-
-同一个 [最新 Release](https://github.com/HanKuCha/DSH-Fujiang-Unrestricted/releases/latest) 同时发布：
-
-| 平台 | 下载 | 安装方法 |
-| --- | --- | --- |
-| Windows Desktop | `DSH-Fujiang-Installer.exe` 或桌面 ZIP | 退出 DSH 后运行 EXE；可浏览选择自定义安装位置 |
-| DSHA 安卓 | 名称含 `DSHA` 的 ZIP | DSHA → 插件导入本地包，或粘贴该具体附件链接 |
-
-手机包不含 Windows 安装器。手机说明与测试范围见 [mobile/README.md](mobile/README.md)，本仓库根 `package.json` 也是 DSHA 可识别的插件声明。桌面与手机核心规则和技能共用 `payload/`，不维护两个分叉的人格版本。
-
-## 这是什么
-
-工作助手预设与跨平台安装包。下文主要介绍 **DeepSeek Harness Desktop** 的 Windows 一键安装器，DSHA 见上方入口。
-
-装完以后，DSH 的会话预设选择器里会多出一个 **「工作助手」（`ws-helper`）**。它由三部分组成：
-
-1. **一份带协作工作方式的固定人格提示词** —— 整段接管系统提示词（`persona: complete: true`），内容是一个「不设限」的助手人格：保留原角色与交付规则，增加主动澄清、阶段性汇报、目标纠正、DSH 工具与子代理使用指引。
-2. **全套标准工具面** —— 持久 shell、文件读写与搜索、后台任务、计划模式、子代理 / 工作流、上下文压缩、技能加载、`present` 等。
-3. **240 + 3 个随包技能** —— 一个覆盖面很宽的攻防知识库，随预设一起落地到 `payload/skills`，由 `skill-filesystem` 挂载。
-
-安装器只做四件事：**检测 DSH → 备份 profile → 复制预设与技能 → 注册依赖和 bundle**。
-
-它**不碰** DSH 程序目录，**不关**沙箱，**不关**审批，**不改** `@deepseek-ai` 任何包文件。
-
----
-
-## v1.1.1 称呼调整
-
-默认使用自然称呼，不再要求把用户叫作“爸爸”。只改语气设定，内容回应规则和协作、工具指引保留。
-
-## v1.1.0 协作更新
-
-- 开始任务先说明调查方向；缺少关键信息先澄清，关键阶段主动汇报。
-- 连续纠正先合并当前已收到的信息，以最后明确的目标为准。
-- 补齐 DSH 工具与子代理分工指引；新增官方后台终端工具，后台查询单次等待上限十秒。
-- 加入 systematic-debugging、test-driven-development、verification-before-completion 三个技能。
-- 保留原有角色和内容回应规则；移除 Windows 下错误的 Android 导出路径与自动清空工作区流程。
-- 单独下载即可安装的 EXE；升级会保留用户自行添加的技能。
-
-提示词不能改变 DSH 同步工具的消息投递边界，本版不宣称已经解决即时插话或内核消息排队；回退/编辑插件也未捆绑进该公共安装包。
-
-## 它装了什么
-
-```
-payload/
-├── dsh-ws-helper-preset/           # 预设与协作技能
-│   ├── cordis.patch.yml            # persona + 协作流程 + 全套工具面组合
-│   └── package.json                # @local/dsh-ws-helper-preset v2.1.3-desktop-coop.7
-└── skills/                         # 240 个技能，271 个文件，约 6.2 MB
-    ├── hunt-sqli/ SKILL.md
-    ├── hunt-xss/ SKILL.md
-    ├── hunt-ssrf/ SKILL.md
-    ├── offensive-active-directory/ SKILL.md
-    ├── hunt-k8s/ SKILL.md
-    ├── apk-redteam-pipeline/ SKILL.md
-    ├── offensive-wpa3-sae/ SKILL.md
-    ├── hunt-llm-ai/ SKILL.md
-    ├── report-writing/ SKILL.md
-    └── …（共 240 个）
-```
-
-技能分类覆盖：Web 漏洞（SQLi / XSS / SSRF / SSTI / XXE / IDOR / 竞态 / 请求走私 / 缓存投毒 / JWT / OAuth / SAML / GraphQL / WebSocket…）、Active Directory 与内网、云与容器（AWS / Azure / GCP / K8s / Docker）、移动端（APK / iOS）、无线与硬件（WPA2 / WPA3 / BLE / Zigbee / LoRaWAN）、LLM 与 AI 应用（提示词注入 / MCP / RAG / Agentic）、供应链、取证对抗、报告撰写。
-
----
-
-## 环境要求
-
-| 项目 | 要求 |
-| --- | --- |
-| 系统 | Windows 10 / 11（x64 或 x86 均可） |
-| 运行时 | .NET Framework 4.8（Windows 10 1903+ / Windows 11 自带） |
-| 宿主 | DeepSeek Harness **Desktop 0.2.x**，已至少启动过一次（生成 `desktop` profile） |
-| 权限 | 普通用户即可；**不需要**管理员 |
-
-> 安装器是 **AnyCPU / ILONLY** 的 .NET Framework WinForms 程序，内嵌预设与技能，约 2.4 MiB。运行时使用系统自带的 .NET Framework 4.8。
-
----
+来源、移植改动与验证范围见 [上游同步记录](docs/upstream-sync.md)。完整上游 fork 保存在 [HanKuCha/fujiang-pojia](https://github.com/HanKuCha/fujiang-pojia)。
 
 ## 安装
 
-1. 先启动一次 **DSH Desktop**，确认能正常打开，然后**完全退出**（托盘也退）。
-2. 从 [最新 Release](https://github.com/HanKuCha/DSH-Fujiang-Unrestricted/releases/latest) 下载并**双击 `DSH-Fujiang-Installer.exe`**；也可解压 ZIP 后运行同名文件。
-3. 确认自动检测到的 `DeepSeek Harness.exe` 与 `DSH_HOME`（默认 `C:\Users\<你>\.dsh`），不对就手动改。
-4. 点 **「安装到 DSH Desktop」**。成功后可勾选直接启动 DSH。
-5. 打开 DSH，**新会话**在预设里选 **「工作助手」**。
+同一个 [最新 Release](https://github.com/HanKuCha/DSH-Fujiang-Unrestricted/releases/latest) 提供桌面与手机附件。
 
-> v1.1.0 的 EXE 已内嵌完整预设与技能，单独下载即可安装；不需要 .NET 10。已有旁边的 payload 时仍兼容目录式安装。
+| 平台 | 下载 | 安装方式 |
+| --- | --- | --- |
+| Windows Desktop | `DSH-Fujiang-Installer.exe` 或桌面 ZIP | 完全退出 DSH 后运行 EXE，选择程序位置与 DSH_HOME |
+| DSHA 安卓 | `DSH-Fujiang-DSHA-v1.4.0.zip` | 在 DSHA 插件管理中导入本地包或使用该具体附件链接 |
 
-如果双击没反应或被拦截：
+Windows EXE 内嵌完整插件与知识库，使用系统 .NET Framework 4.8。安装过程通过 Desktop 随附 CLI 注册插件。程序位置可填安装文件夹、`DeepSeek Harness.exe` 或随附的 `resources/runtime/cli/bin/dsh.cmd`，支持自定义磁盘与目录。
 
-```
-双击  修复-运行安装器.cmd      # 从当前目录调用 EXE，保留控制台窗口显示错误
-```
+安装器会备份 Desktop profile 和原插件目录，沿用 DSH_HOME 内已有的本地维护链接，并校验实际链接的全部发布文件。已有更新版本会触发拒绝降级。首次安装需要先启动一次 DSH，让 Desktop profile 创建完成。
 
----
+## 使用
 
-## 卸载
+1. 启动 DSH，选择“工作助手”，或使用已经启用富江人格的原生模式。
+2. 在输入区找到“富江破甲”开关和设置入口。
+3. 在提示词页编辑人格，或使用卡片切换正文。
+4. 知识库随包提供，技能面板中的 REA、AboutSecurity 按需要下载安装。
+5. 在任务面板创建任务并绑定当前会话，随后查看阶段进度与报告。
 
-两种方式，等价：
+输入区开关控制上游人格注入。插话回应在工作助手根会话中启用，其他原生模式在富江人格开启时也会得到回应补充。子代理将执行结果交回主代理，由主代理与用户沟通。
 
-```
-双击  卸载-工作助手预设.cmd
-# 或
-DSH-Fujiang-Installer.exe --uninstall
-```
+补回应沿用当前提供商与模型。模型没有先输出正文时，可能产生一次额外文本请求，相关用量合并记录。生成失败时显示明确的 DSH 状态提示，随后继续原任务。
 
-卸载会**先备份** profile，再从 `package.json` 里摘掉依赖与 bundle 条目，然后调用 DSH CLI 同步依赖。
+## 从 1.3.x 升级
 
-**手动恢复**：关闭 DSH，把备份目录里的 `package.json`、`cordis.patch.yml` 及原有锁文件还原到 `DSH_HOME\profiles\desktop`；如果备份里有 `old-plugin`，还原到 `DSH_HOME\plugins\dsh-ws-helper-preset`，再用 DSH 的插件管理器同步一次。
+运行新版 EXE 即可迁移。当前默认人格改由上游动态注入，提示词编辑和开关可参与现有会话的后续装配。
 
-| 位置 | 路径 |
-| --- | --- |
-| 安装日志 | `%LOCALAPPDATA%\DSH-Fujiang-Installer\logs\installer-*.log` |
-| 自动备份 | `<DSH_HOME>\installer-backups\<时间戳>-<标识>\` |
+原有 240＋3 技能与固定人格的挂载由上游分类知识和按需技能管理接替。升级会备份旧插件，原目录中用户自行添加的文件可从备份或旧位置取回。安装器通过 overlay 禁用已知的旧人格插件入口，减少重复注入。
 
----
+自定义提示词配置保存在 `$DSH_HOME/prompt-custom.json`。已有配置优先生效，首次运行会使用随包默认文案。知识库与技能状态位于 `$DSH_HOME/fujiang-skills`，报告和任务记录位于 `$DSH_HOME/vuln-report`。
 
-## 校验
+自动续跑使用独立的消息来源。绑定任务的流程规则随绑定状态生效，普通会话可继续处理一般工作。忙碌会话会等待后续调度，自动续跑的轮次在实际发送时增加。
 
-发布包内附 `SHA256SUMS.txt`（逐文件）。核心几项：
+## 环境与验证
 
-| 文件 | SHA-256 |
-| --- | --- |
-| `payload/dsh-ws-helper-preset/cordis.patch.yml` | `362CA8D9432F0EDD40DA52909236811BCBA99F3C945485B28236D0E171D3B2D9` |
-| `payload/dsh-ws-helper-preset/package.json` | `02818D50857B4A5EEACA426532813011765F3FBA174127D8BEEFA483A75EF96A` |
-| `DSH-Fujiang-Installer.exe` | 见 Release 附带的 `SHA256SUMS.txt` |
+- Windows 10/11，.NET Framework 4.8，DSH Desktop 0.2.2-rc.1 已进行原生验收。
+- 插件声明支持 DSH `>=0.2.1-rc.5 <0.3.0`。不同版本仍需结合宿主兼容性测试。
+- 按需安装的外部技能与 REA 引擎具有各自的 Node.js、npm 和系统依赖，面板会显示检测或安装错误。
+- DSHA 包结构、模块入口和原生运行时验证使用隔离环境，Android 真机需要对应设备验收。
 
-安装器内部也把这个预设哈希**写死**了（`ExpectedPresetSha256`）。安装完会回读 profile 里链接到的 `cordis.patch.yml` 并比对，不一致就报失败 —— 不会出现「装完了但装的不是这个预设」。
+源代码测试入口为 `scripts/test-installer.ps1`、`scripts/test-runtime.mjs`、`scripts/test-communication.mjs` 和 `mobile/test.cjs`。原生运行时脚本需在 DSH 随附的 Electron Node 模式中运行，并在隔离 DSH_HOME 下创建测试会话。相关行为回归使用模型夹具。
 
----
-
-## 从源码构建
+## 构建
 
 ```powershell
-# 需要 .NET Framework 4.x 自带的 csc.exe（Win10/11 内置，无需装 SDK）
-powershell -ExecutionPolicy Bypass -File src\build.ps1
+npm ci
+npm run build:mobile
+npm run test:mobile
+powershell -ExecutionPolicy Bypass -File src/build.ps1
+python tools/package-release.py
+python tools/package-mobile.py
 ```
 
-产物在 `dist\DSH-Fujiang-Installer.exe`，已内嵌完整 payload。
+Windows 安装器通过系统 .NET Framework 编译器构建，源码为 `src/DSHInstaller.cs`。桌面与手机共用 `payload/dsh-ws-helper-preset`，手机生成过程转换插件模块名与客户端入口。
 
-> 重新编译出来的 EXE 与 Release 里的**字节不同**（.NET Framework 版 csc 会写入随机 MVID 和时间戳），但源码与行为一致。要核对你手上的 EXE 是不是这份源码编的，比 Release 里的 SHA-256，而不是自己重编。
+## 许可与来源
 
-打包成发布 ZIP：
-
-```powershell
-python tools\package-release.py
-# → outputs/DSH-Fujiang-Unrestricted-v<version>.zip + SHA256SUMS.txt
-```
-
----
-
-## 仓库结构
-
-```
-.
-├── src/
-│   ├── DSHInstaller.cs            # 安装器全部逻辑（WinForms，自解包 payload）
-│   ├── app.manifest               # 清单（普通用户权限，不请求提权）
-│   └── build.ps1                  # 一键编译
-├── payload/
-│   ├── dsh-ws-helper-preset/      # 预设：persona + 工具面
-│   └── skills/                    # 240 个随包技能
-├── package/                       # 只进发布包的辅助脚本
-│   ├── 修复-运行安装器.cmd
-│   └── 卸载-工作助手预设.cmd
-├── docs/
-│   ├── 安装说明.txt
-│   └── 修复说明.txt               # 1.0.2 兼容性修复明细
-├── scripts/
-│   ├── test-installer.ps1         # 隔离安装与单文件 EXE 测试（中文/空格/&/%/括号路径）
-│   └── test-real-cli.ps1          # 用真实 DSH CLI 在独立 DSH_HOME 里验证
-├── tools/
-│   ├── package-release.py         # 组装发布 ZIP + 生成 SHA256SUMS
-│   └── migrate-1.0-to-1.0.2.py    # 1.0 → 1.0.2 的源码迁移脚本（留档）
-├── CHANGELOG.md
-└── README.md
-```
-
----
-
-## 安装器做了什么（逐步）
-
-```
-1. 检测      读注册表（HKLM/HKCU × 32/64 视图）Uninstall 项 + Program Files 兜底，
-             找 DeepSeek Harness.exe；找不到就让你手动选
-2. 校验      从 EXE 同级目录定位 resources\runtime\cli\bin\dsh.cmd，
-             没有 CLI 直接报错（不会假装成功）
-3. 前置检查  目标 DSH 进程还在跑就中止，避免覆盖运行中的配置
-4. 预校验    先读一遍 profile package.json，确认 dependencies / dsh.profile.bundles 结构在，
-             再动手写
-5. 备份      复制 profiles\desktop 到 <DSH_HOME>\installer-backups\<时间戳>-<6位标识>\
-6. 写入      复制 payload\dsh-ws-helper-preset → plugins\dsh-ws-helper-preset
-             package.json 里 upsert 依赖 link: 路径 + 追加 bundle 条目
-             （保留所有无关字段，UTF-8 无 BOM）
-7. 同步      cmd.exe /d /v:off /s /c "…dsh.cmd plugin --profile desktop install"
-8. 验证      回读 node_modules\@local\dsh-ws-helper-preset\cordis.patch.yml，
-             比对 ExpectedPresetSha256；不符 → 失败
-9. 收尾      禁用重复的独立 fujiang 注入；可选启动 DSH（带上所选 DSH_HOME）
-```
-
-全程日志落 `%LOCALAPPDATA%\DSH-Fujiang-Installer\logs\`。
-
----
-
-## 常见问题
-
-**装完新会话里没有「工作助手」**
-完全退出 DSH（含托盘）再开。预设注册表在进程启动时读取，热装不会即时出现。
-
-**安装器报「找不到随 DSH Desktop 安装的 CLI」**
-你选中的 EXE 不是桌面端主程序，或者选到了 `dsh.cmd`。选 `DeepSeek Harness.exe`。
-
-**安装器报「请完全退出 DSH Desktop 后再安装」**
-任务管理器里结束 `DeepSeek Harness.exe` 后重试。
-
-**依赖同步失败**
-配置已写入但没装成链接。修正网络/权限后**重新点一次安装**即可（会再次备份）。日志里有 CLI 原始输出。
-
-**路径里有中文、空格、`&`、`%`、括号**
-1.0.2 起已专门处理并纳入测试（见 `scripts/test-installer.ps1`），可以正常安装。
-
-**能不能只装预设、不装技能**
-发布安装器校验完整 payload，不建议手动删除；技能按需加载，不会一次性执行。
-
-**会不会影响我已有的其他插件**
-不会。安装器只 upsert 它自己那一条依赖和 bundle 条目，其余字段原样保留（`scripts/test-installer.ps1` 里有「保留无关 JSON 字段」的用例）。
-
----
-
-## 边界
-
-- 只改**当前用户**的 `DSH_HOME`，不写 DSH 程序目录，不请求管理员权限。
-- 不关闭 DSH 的沙箱、审批栈或工具权限。
-- 不含 DSH 程序本体；你需要自行安装官方 DeepSeek Harness Desktop。本版运行时验证基线为 0.2.1-rc.5。
-- 预设改变的是**提示词与回答尺度**，宿主侧的工具能力、沙箱与审批仍由 DSH 自己决定。
-
----
-
-## 许可
-
-[MIT](LICENSE)。随意改、随意分发，保留版权声明即可。
-
-新增三个协作技能来自 obra/superpowers（MIT），详见 [第三方声明](THIRD_PARTY_NOTICES.md)。旧 240 个技能文本的出处与许可状态未逐一追溯，如你是某个技能的作者并希望调整署名或移除，请开 Issue。
+项目采用 MIT 许可。上游插件、知识库和前端源码的 MIT 声明保存在 `payload/dsh-ws-helper-preset/upstream/LICENSE`，归属与版本说明见 [第三方声明](THIRD_PARTY_NOTICES.md)。

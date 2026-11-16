@@ -1,14 +1,12 @@
 # Third-party notices
 
-The three added collaboration skills (`systematic-debugging`, `test-driven-development`, `verification-before-completion`) and their bundled references come from [obra/superpowers](https://github.com/obra/superpowers), commit `2ce8aa15d05bd57213e6f746f953aafb7ded7a8b`.
+The plugin implementation, client, bundled knowledge and default prompt originate from fujiang-pojia 0.20.13, commit `338b598386aed60d4e7bdbf60ebb526af0b47697`.
 
-They are distributed under the MIT License. The complete notice is preserved at `payload/dsh-ws-helper-preset/collaboration-skills/LICENSE.superpowers.txt` and installed alongside those skills.
+The preserved source is available at [HanKuCha/fujiang-pojia](https://github.com/HanKuCha/fujiang-pojia/tree/upstream-0.20.13). The implementation is included in `payload/dsh-ws-helper-preset/upstream`, with its original MIT license at `upstream/LICENSE`.
 
-The existing 240 skills are retained from the project's previous release. Their original notices and provenance remain unchanged; this release does not relabel them as newly authored work.
+Local adaptations cover package/module identifiers, host SDK resolution, communication integration, campaign scheduling and lifecycle, the runtime version label, and the default prompt's form of address and channel branding. The communication module and Windows installer are maintained in this repository.
 
-## fujiang-pojia installation discovery
-
-The Desktop discovery changes in v1.3.1 adapt the installation-path handling in fujiang-pojia 0.20.13, commit `338b598386aed60d4e7bdbf60ebb526af0b47697`. Source snapshot is available at https://github.com/HanKuCha/fujiang-pojia/tree/upstream-0.20.13 . The original MIT notice follows.
+## Original MIT notice
 
 MIT License
 

@@ -108,7 +108,8 @@ $overlayCases = @(
     @('fresh-comments', "# dsh profile patch`r`n# overrides, disables, and inserts`r`n[]`r`n", "# dsh profile patch`r`n# overrides, disables, and inserts"),
     @('inline-comment', "# preserved`n[ ] # empty root`n", '# empty root'),
     @('broken-prefix', "# preserved`r`n[]`r`n`r`n- id: fujiang`r`n  disabled: true`r`n", '# preserved'),
-    @('existing-entries', "# preserve unrelated overrides`r`n- id: keep`r`n  config:`r`n    list: []`r`n", '    list: []')
+    @('existing-entries', "# preserve unrelated overrides`r`n- id: keep`r`n  config:`r`n    list: []`r`n", '    list: []'),
+    @('existing-upstream', "# keep upstream options`r`n- id: prompt-custom`r`n  disabled: false`r`n  config:`r`n    retained: true`r`n", '    retained: true')
 )
 foreach ($overlayCase in $overlayCases) {
     $overlayHome = New-Profile $overlayCase[0]
@@ -120,6 +121,11 @@ foreach ($overlayCase in $overlayCases) {
     Check ([IO.File]::ReadAllText((Join-Path $overlayResult.BackupDirectory 'cordis.patch.yml')) -eq $overlayCase[1]) ("backup original overlay: " + $overlayCase[0])
     Check (@([regex]::Matches($repaired, '(?m)^- id: fujiang\r?$')).Count -eq 1) ("single fujiang override: " + $overlayCase[0])
     Check ($repaired -notmatch '(?m)^\s*\[\s*\]\s*(#.*)?\r?$') ("no empty root before block entries: " + $overlayCase[0])
+    Check ($repaired -match '(?m)^  disabled: true\r?$') 'upstream duplicate injection disabled'
+    if ($overlayCase[0] -eq 'existing-upstream') {
+        $null = $service.GetMethod('RemovePreset', $flags).Invoke($null, @([string]$overlayHome))
+        Check ([IO.File]::ReadAllText($overlayPath) -match '- id: prompt-custom\r?\n  config:') 'uninstall retains upstream options with a valid root entry'
+    }
 }
 $customSkill = Join-Path $homePath 'plugins\dsh-ws-helper-preset\skills\user-skill\SKILL.md'
 New-Item -ItemType Directory -Force -Path (Split-Path $customSkill) | Out-Null
@@ -155,10 +161,10 @@ $meta.dependencies | Add-Member -NotePropertyName '@local/dsh-ws-helper-preset' 
 $null = Install $localHome
 $meta = Get-Content -LiteralPath $localProfile -Raw -Encoding UTF8 | ConvertFrom-Json
 Check ($meta.dependencies.'@local/dsh-ws-helper-preset' -eq ('link:'+$localPlugin.Replace('\','/'))) 'upgrade preserves existing local maintenance link'
-Check ((Get-Content -LiteralPath $localManifest -Raw -Encoding UTF8 | ConvertFrom-Json).version -eq '2.1.3-desktop-coop.7') 'existing local maintenance copy upgraded to current payload'
+Check ((Get-Content -LiteralPath $localManifest -Raw -Encoding UTF8 | ConvertFrom-Json).version -eq '2.1.3-desktop-coop.8') 'existing local maintenance copy upgraded to current payload'
 Check (!(Test-Path -LiteralPath (Join-Path $localHome 'plugins\dsh-ws-helper-preset'))) 'no duplicate shared preset created for existing local link'
 $meta = Get-Content -LiteralPath $localManifest -Raw -Encoding UTF8 | ConvertFrom-Json
-$meta.version='2.1.3-desktop-coop.8'
+$meta.version='2.1.3-desktop-coop.9'
 [IO.File]::WriteAllText($localManifest,($meta | ConvertTo-Json -Depth 20),$utf8)
 $beforeVersionHash=(Get-FileHash -LiteralPath $localManifest).Hash
 $rejected=$false
@@ -198,5 +204,5 @@ $standaloneHome = New-Profile 'standalone-home'
 $proc = Start-Process -FilePath (Join-Path $standalone 'DSH-Fujiang-Installer.exe') -ArgumentList @('--silent', '--dsh-home', ('"' + $standaloneHome + '"'), '--dsh-exe', ('"' + $cli + '"')) -PassThru -WindowStyle Hidden
 if (!$proc.WaitForExit(30000)) { $proc.Kill(); throw 'Standalone installer timed out' }
 Check ($proc.ExitCode -eq 0) 'standalone EXE accepts CLI path and installs without adjacent payload'
-Check ([IO.File]::Exists((Join-Path $standaloneHome 'plugins\dsh-ws-helper-preset\collaboration-skills\systematic-debugging\SKILL.md'))) 'standalone EXE includes collaboration skills'
+Check ([IO.File]::Exists((Join-Path $standaloneHome 'plugins\dsh-ws-helper-preset\upstream\knowledge\triage\SKILL.md'))) 'standalone EXE includes upstream knowledge'
 Write-Output "TOTAL_PASS=$script:passed"

@@ -11,9 +11,8 @@ version = manifest['version']
 out = repo / 'outputs'
 out.mkdir(exist_ok=True)
 archive = out / f'DSH-Fujiang-DSHA-v{version}.zip'
-files = {'package.json', 'mobile/cordis.patch.yml', 'mobile/README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md'}
-files.add('payload/dsh-ws-helper-preset/subagent-list-compat.mjs')
-for root in ['payload/skills', 'payload/dsh-ws-helper-preset/collaboration-skills']:
+files = {'package.json', 'mobile/cordis.patch.yml', 'mobile/client.js', 'mobile/README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md'}
+for root in ['payload/dsh-ws-helper-preset']:
     files.update(p.relative_to(repo).as_posix() for p in (repo / root).rglob('*') if p.is_file())
 assert all(not name.endswith(('.exe', '.cmd', '.dll')) for name in files)
 assert not any(name.startswith(('src/', 'dist/', 'scripts/')) for name in files)

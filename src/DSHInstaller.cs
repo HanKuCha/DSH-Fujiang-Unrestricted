@@ -16,8 +16,8 @@ using System.Collections;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-[assembly: System.Reflection.AssemblyVersion("1.3.1.0")]
-[assembly: System.Reflection.AssemblyFileVersion("1.3.1.0")]
+[assembly: System.Reflection.AssemblyVersion("1.4.0.0")]
+[assembly: System.Reflection.AssemblyFileVersion("1.4.0.0")]
 [assembly: System.Reflection.AssemblyProduct("DSH Fujiang Unrestricted")]
 
 namespace DSHFujiangInstaller
@@ -26,11 +26,13 @@ namespace DSHFujiangInstaller
     {
         private const string ProductName = "DSH Fujiang Unrestricted";
         private const string PackageName = "@local/dsh-ws-helper-preset";
-        private const string ExpectedPresetSha256 = "6B3EF552112AE3511E94905C6C295F8ACF0DE1177579D6A5FDC09B9984C8D87E";
+        private const string ExpectedPresetSha256 = "34BFDFE666D8CD436B1C7F95AE8DD04961784B77E21EF62359E70CB86B95B91A";
 
         [STAThread]
         private static void Main(string[] args)
         {
+            AppContext.SetSwitch("Switch.System.IO.UseLegacyPathHandling", false);
+            AppContext.SetSwitch("Switch.System.IO.BlockLongPaths", false);
             var logRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DSH-Fujiang-Installer", "logs");
             try { Directory.CreateDirectory(logRoot); }
             catch { logRoot = Path.GetTempPath(); }
@@ -738,8 +740,10 @@ namespace DSHFujiangInstaller
             var payload = Path.Combine(packageRoot, "payload");
             var presetSource = Path.Combine(payload, "dsh-ws-helper-preset", "cordis.patch.yml");
             var packageSource = Path.Combine(payload, "dsh-ws-helper-preset", "package.json");
-            var skillsSource = Path.Combine(payload, "skills");
-            if (!File.Exists(presetSource) || !File.Exists(packageSource) || !Directory.Exists(skillsSource))
+            var upstreamSource = Path.Combine(payload, "dsh-ws-helper-preset", "upstream");
+            if (!File.Exists(presetSource) || !File.Exists(packageSource)
+                || !File.Exists(Path.Combine(upstreamSource, "default-prompt.json"))
+                || !Directory.Exists(Path.Combine(upstreamSource, "knowledge")))
             {
                 throw new InvalidOperationException("发布包内容不完整，请重新解压 ZIP 后再运行。");
             }
@@ -774,8 +778,6 @@ namespace DSHFujiangInstaller
             }
             Console.WriteLine("STEP copy preset");
             CopyDirectory(Path.Combine(payload, "dsh-ws-helper-preset"), targetPlugin);
-            Console.WriteLine("STEP copy skills");
-            CopySkills(skillsSource, Path.Combine(targetPlugin, "skills"));
 
             Console.WriteLine("STEP update profile package");
             var mutable = ReadJson(profilePackage);
@@ -790,6 +792,7 @@ namespace DSHFujiangInstaller
             {
                 patchText = patchText.TrimEnd() + Environment.NewLine + Environment.NewLine + "- id: fujiang" + Environment.NewLine + "  disabled: true" + Environment.NewLine;
             }
+            patchText = DisablePromptCustom(patchText);
             if (patchText != originalPatch)
                 File.WriteAllText(profilePatch, patchText, new UTF8Encoding(false));
 
@@ -803,11 +806,13 @@ namespace DSHFujiangInstaller
             var bundledVersion = Convert.ToString(ReadJson(packageSource)["version"]);
             if (Convert.ToString(ReadJson(Path.Combine(installedRoot, "package.json"))["version"]) != bundledVersion)
                 throw new InvalidOperationException("实际链接的预设版本与安装包不一致。备份：" + backup);
-            foreach (var module in Directory.GetFiles(Path.GetDirectoryName(packageSource), "*.mjs"))
+            var sourceRoot = Path.GetDirectoryName(packageSource);
+            foreach (var module in Directory.GetFiles(sourceRoot, "*", SearchOption.AllDirectories))
             {
-                var installedModule = Path.Combine(installedRoot, Path.GetFileName(module));
+                var relative = module.Substring(sourceRoot.Length + 1);
+                var installedModule = Path.Combine(installedRoot, relative);
                 if (!File.Exists(installedModule) || HashFile(installedModule) != HashFile(module))
-                    throw new InvalidOperationException("实际链接的运行时模块不一致：" + Path.GetFileName(module) + "。备份：" + backup);
+                    throw new InvalidOperationException("实际链接的插件文件不一致：" + relative + "。备份：" + backup);
             }
             Console.WriteLine("STEP verified installed preset");
 
@@ -840,10 +845,15 @@ namespace DSHFujiangInstaller
             var lines = File.ReadAllLines(profilePatch).ToList();
             for (int i = lines.Count - 2; i >= 0; i--)
             {
-                if (lines[i].Trim() == "- id: fujiang" && lines[i + 1].Trim() == "disabled: true")
+                if ((lines[i].Trim() == "- id: fujiang" || lines[i].Trim() == "- id: prompt-custom") && lines[i + 1].Trim() == "disabled: true")
                 {
-                    lines.RemoveAt(i);
-                    lines.RemoveAt(i);
+                    if (i + 2 < lines.Count && lines[i + 2].StartsWith("  ", StringComparison.Ordinal))
+                        lines.RemoveAt(i + 1);
+                    else
+                    {
+                        lines.RemoveAt(i);
+                        lines.RemoveAt(i);
+                    }
                 }
             }
             File.WriteAllText(profilePatch, string.Join(Environment.NewLine, lines) + Environment.NewLine, new UTF8Encoding(false));
@@ -858,6 +868,19 @@ namespace DSHFujiangInstaller
             var root = Regex.Match(text, @"\A(?<leading>(?:(?:[ \t]*\#[^\r\n]*)?[ \t]*(?:\r?\n|\z))*)(?<empty>[ \t]*\[[ \t]*\][ \t]*)(?<comment>\#[^\r\n]*)?(?=\r?\n|\z)");
             if (!root.Success) return text;
             return text.Remove(root.Groups["empty"].Index, root.Groups["empty"].Length);
+        }
+
+        private static string DisablePromptCustom(string text)
+        {
+            var entry = Regex.Match(text, @"(?m)^- id: prompt-custom[ \t]*(?=\r?$)");
+            if (!entry.Success) return text.TrimEnd() + Environment.NewLine + "- id: prompt-custom" + Environment.NewLine + "  disabled: true" + Environment.NewLine;
+            var end = text.IndexOf("\n- ", entry.Index + entry.Length, StringComparison.Ordinal);
+            if (end < 0) end = text.Length;
+            var block = text.Substring(entry.Index, end - entry.Index);
+            var disabled = Regex.Match(block, @"(?m)^  disabled:[^\r\n]*");
+            if (disabled.Success) block = block.Remove(disabled.Index, disabled.Length).Insert(disabled.Index, "  disabled: true");
+            else block = block.Insert(entry.Length, Environment.NewLine + "  disabled: true");
+            return text.Substring(0, entry.Index) + block + text.Substring(end);
         }
 
         private static string ResolvePluginTarget(Dictionary<string, object> profile, string profileRoot, string dshHome)
@@ -912,11 +935,6 @@ namespace DSHFujiangInstaller
                 }
             }
             return root;
-        }
-
-        private static void CopySkills(string source, string target)
-        {
-            CopyDirectory(source, target);
         }
 
         private static void CopyDirectory(string source, string target)
