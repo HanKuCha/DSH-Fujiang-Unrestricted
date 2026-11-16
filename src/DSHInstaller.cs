@@ -26,7 +26,7 @@ namespace DSHFujiangInstaller
     {
         private const string ProductName = "DSH Fujiang Unrestricted";
         private const string PackageName = "@local/dsh-ws-helper-preset";
-        private const string ExpectedPresetSha256 = "34BFDFE666D8CD436B1C7F95AE8DD04961784B77E21EF62359E70CB86B95B91A";
+        private const string ExpectedPresetSha256 = "478DABF46F5F9105497EE87B151FE92BB2D13C317ECB590071FBACD7BF1C13B9";
 
         [STAThread]
         private static void Main(string[] args)
@@ -764,7 +764,7 @@ namespace DSHFujiangInstaller
             // Validate the profile before making any changes.
             var checkedProfile = ReadJson(profilePackage);
             GetDependencies(checkedProfile);
-            GetBundles(checkedProfile);
+            var bundleAlreadyRegistered = GetBundles(checkedProfile).Cast<object>().Any(value => Convert.ToString(value) == Program.PackageId);
             var targetPlugin = ResolvePluginTarget(checkedProfile, profileRoot, dshHome);
             RejectPresetDowngrade(packageSource, Path.Combine(targetPlugin, "package.json"));
             Console.WriteLine("STEP backup profile");
@@ -797,11 +797,21 @@ namespace DSHFujiangInstaller
                 File.WriteAllText(profilePatch, patchText, new UTF8Encoding(false));
 
             Console.WriteLine("STEP dependency sync");
-            var output = RunCli(cli, dshHome, 300000, "plugin", "--profile", "desktop", "install");
-            var cliOutput = new List<string>(Lines(output));
             var installedPreset = Path.Combine(profileRoot, "node_modules", "@local", "dsh-ws-helper-preset", "cordis.patch.yml");
+            var linkedRoot = Path.GetDirectoryName(installedPreset);
+            var manifest = ReadJson(packageSource);
+            var hasDependencies = new[] { "dependencies", "optionalDependencies", "peerDependencies" }
+                .Any(key => manifest.ContainsKey(key) && ((IDictionary)manifest[key]).Count > 0);
+            var reuseLink = bundleAlreadyRegistered && !hasDependencies && LinkSharesDirectory(linkedRoot, targetPlugin);
+            var output = reuseLink
+                ? "已验证并复用现有本地链接，完成本地文件升级。"
+                : RunCli(cli, dshHome, 300000, "plugin", "--profile", "desktop", "install");
+            var cliOutput = new List<string>(Lines(output));
+            Console.WriteLine(output);
             if (!File.Exists(installedPreset) || !string.Equals(HashFile(installedPreset), Program.ExpectedHash, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("依赖同步后未找到正确的预设链接，安装未完成。备份：" + backup);
+            if (!LinkSharesDirectory(linkedRoot, targetPlugin))
+                throw new InvalidOperationException("实际预设链接指向另一目录，安装未完成。备份：" + backup);
             var installedRoot = Path.GetDirectoryName(installedPreset);
             var bundledVersion = Convert.ToString(ReadJson(packageSource)["version"]);
             if (Convert.ToString(ReadJson(Path.Combine(installedRoot, "package.json"))["version"]) != bundledVersion)
@@ -881,6 +891,22 @@ namespace DSHFujiangInstaller
             if (disabled.Success) block = block.Remove(disabled.Index, disabled.Length).Insert(disabled.Index, "  disabled: true");
             else block = block.Insert(entry.Length, Environment.NewLine + "  disabled: true");
             return text.Substring(0, entry.Index) + block + text.Substring(end);
+        }
+
+        private static bool LinkSharesDirectory(string linkedRoot, string targetRoot)
+        {
+            if (!Directory.Exists(linkedRoot)) return false;
+            var name = ".installer-link-" + Guid.NewGuid().ToString("N");
+            var marker = Path.Combine(targetRoot, name);
+            try
+            {
+                File.WriteAllText(marker, name);
+                var linkedMarker = Path.Combine(linkedRoot, name);
+                return File.Exists(linkedMarker) && File.ReadAllText(linkedMarker) == name;
+            }
+            catch (IOException) { return false; }
+            catch (UnauthorizedAccessException) { return false; }
+            finally { if (File.Exists(marker)) File.Delete(marker); }
         }
 
         private static string ResolvePluginTarget(Dictionary<string, object> profile, string profileRoot, string dshHome)

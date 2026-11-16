@@ -135,6 +135,11 @@ Check ([IO.File]::ReadAllText($customSkill) -eq 'user-owned skill') 'upgrade pre
 $profile = Get-Content -LiteralPath $profilePath -Raw -Encoding UTF8 | ConvertFrom-Json
 Check (@($profile.dsh.profile.bundles | Where-Object { $_ -eq '@local/dsh-ws-helper-preset' }).Count -eq 1) 'repeat install does not duplicate bundle'
 Check ($result.BackupDirectory -ne $result2.BackupDirectory) 'repeat install has independent backups'
+[IO.File]::WriteAllText($cli, "@echo off`r`nexit /b 37`r`n", [Text.Encoding]::ASCII)
+$reused = Install $homePath
+Check (($reused.Output -join '') -match '复用现有本地链接') 'existing link upgrade avoids unrelated dependency resolution'
+Check (@(Get-ChildItem -LiteralPath (Join-Path $homePath 'plugins\dsh-ws-helper-preset') -Filter '.installer-link-*' -Force).Count -eq 0) 'link probe cleans up temporary files'
+[IO.File]::WriteAllText($cli, $success, [Text.Encoding]::ASCII)
 $payload = Join-Path $stage 'payload'
 $installed = Join-Path $homePath 'plugins\dsh-ws-helper-preset'
 $mismatches = @()
@@ -161,10 +166,10 @@ $meta.dependencies | Add-Member -NotePropertyName '@local/dsh-ws-helper-preset' 
 $null = Install $localHome
 $meta = Get-Content -LiteralPath $localProfile -Raw -Encoding UTF8 | ConvertFrom-Json
 Check ($meta.dependencies.'@local/dsh-ws-helper-preset' -eq ('link:'+$localPlugin.Replace('\','/'))) 'upgrade preserves existing local maintenance link'
-Check ((Get-Content -LiteralPath $localManifest -Raw -Encoding UTF8 | ConvertFrom-Json).version -eq '2.1.3-desktop-coop.8') 'existing local maintenance copy upgraded to current payload'
+Check ((Get-Content -LiteralPath $localManifest -Raw -Encoding UTF8 | ConvertFrom-Json).version -eq '2.1.3-desktop-coop.10') 'existing local maintenance copy upgraded to current payload'
 Check (!(Test-Path -LiteralPath (Join-Path $localHome 'plugins\dsh-ws-helper-preset'))) 'no duplicate shared preset created for existing local link'
 $meta = Get-Content -LiteralPath $localManifest -Raw -Encoding UTF8 | ConvertFrom-Json
-$meta.version='2.1.3-desktop-coop.9'
+$meta.version='2.1.3-desktop-coop.11'
 [IO.File]::WriteAllText($localManifest,($meta | ConvertTo-Json -Depth 20),$utf8)
 $beforeVersionHash=(Get-FileHash -LiteralPath $localManifest).Hash
 $rejected=$false
@@ -193,7 +198,8 @@ $proc = Start-Process -FilePath (Join-Path $stage 'DSH-Fujiang-Installer.exe') -
 if (!$proc.WaitForExit(30000)) { $proc.Kill(); throw 'Silent entry point timed out' }
 Check ($proc.ExitCode -eq 0) 'EXE --silent first argument accepts install directory'
 [IO.File]::WriteAllText($cli, "@echo off`r`nexit /b 37`r`n", [Text.Encoding]::ASCII)
-$proc = Start-Process -FilePath (Join-Path $stage 'DSH-Fujiang-Installer.exe') -ArgumentList @('--silent', '--dsh-home', ('"' + $silentHome + '"'), '--dsh-exe', ('"' + $exe + '"')) -PassThru -WindowStyle Hidden
+$silentFailureHome = New-Profile 'silent-failure'
+$proc = Start-Process -FilePath (Join-Path $stage 'DSH-Fujiang-Installer.exe') -ArgumentList @('--silent', '--dsh-home', ('"' + $silentFailureHome + '"'), '--dsh-exe', ('"' + $exe + '"')) -PassThru -WindowStyle Hidden
 if (!$proc.WaitForExit(30000)) { $proc.Kill(); throw 'Silent failure timed out' }
 Check ($proc.ExitCode -eq 1) 'EXE propagates install failure exit code'
 [IO.File]::WriteAllText($cli, $success, [Text.Encoding]::ASCII)

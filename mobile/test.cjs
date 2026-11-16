@@ -9,6 +9,7 @@ const rows = doc[0].insert;
 assert(rows.some(row=>row.id==='fujiang-upstream' && row.name==='dsh-fujiang-mobile'));
 assert(rows.some(row=>row.id==='ws-helper-communication' && row.name==='dsh-fujiang-mobile/communication'));
 assert(!rows.find(row=>row.id==='preset-ws-helper').config.plugins.some(row=>row.id==='persona'));
+assert(rows.find(row=>row.id==='preset-ws-helper').config.plugins.some(row=>row.id==='skill-filesystem'));
 assert.equal(manifest.dsh.client.entry,'client');
 assert(fs.readFileSync(path.join(__dirname,'client.js'),'utf8').includes('id: "dsh-fujiang-mobile"'));
 assert(!fs.readFileSync(path.join(__dirname,'cordis.patch.yml'),'utf8').includes('C:/Users/'));

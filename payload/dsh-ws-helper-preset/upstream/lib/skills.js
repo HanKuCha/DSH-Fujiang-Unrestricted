@@ -219,6 +219,12 @@ export function createSkillLibrary(ctx, options = {}) {
     if (!runtimeCtx) throw new Error('当前 DSH 尚未提供技能和工具服务，请完整重启官方 Desktop 后重试。');
     const launch = readJson(path.join(installDir, 'launch.json'));
     if (!path.isAbsolute(launch.node) || !fs.existsSync(launch.node)) throw new Error('Node.js 路径已失效，请删除后重新下载安装。');
+    const envFile = path.join(root, 'rea-env.json');
+    const env = fs.existsSync(envFile) ? readJson(envFile) : undefined;
+    if (env !== undefined && (!env || typeof env !== 'object' || Array.isArray(env)
+      || Object.entries(env).some(([key, value]) => !/^[A-Za-z_][A-Za-z0-9_]*$/.test(key) || typeof value !== 'string'))) {
+      throw new Error('rea-env.json 必须是环境变量名称与字符串值组成的对象。');
+    }
     const require = createRequire(path.join(installDir, 'package.json'));
     let mcpClient;
     try { mcpClient = await importRuntime(ctx, '@deepseek-ai/dsh-mcp-client'); } catch { /* use the owned fallback */ }
@@ -230,6 +236,7 @@ export function createSkillLibrary(ctx, options = {}) {
     try {
       mcpFiber = runtimeCtx.plugin(mcpClient, {
         transport: 'stdio', serverName: SERVER_NAME, command: launch.node,
+        ...(env ? { env } : {}),
         args: [path.join(installDir, 'node_modules/rea-agents/scripts/rea.mjs'), '--mcp'],
         cwd: installDir, env: { REA_MCP_OUTPUT_SCHEMA_PROFILE: 'off' },
         toolCallTimeoutMs: 60000, failOnStartupError: true, maxInstructionBytes: 32768,

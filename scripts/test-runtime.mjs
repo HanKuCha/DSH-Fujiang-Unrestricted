@@ -15,6 +15,9 @@ const bundleName = mobile ? 'dsh-fujiang-mobile' : '@local/dsh-ws-helper-preset'
 const bundleDir = path.resolve(task, mobile ? '..' : '../payload/dsh-ws-helper-preset');
 const home=path.resolve(task,'../outputs/upstream-qa-'+(mobile?'mobile-':'desktop-')+process.pid+'-'+Date.now()),dir=home+'/profiles/spec',cwd=home+'/workspace';
 process.env.DSH_HOME=home;
+const localSkillDir=path.join(home,'skills','existing-user-fixture');
+await fs.mkdir(localSkillDir,{recursive:true});
+await fs.writeFile(path.join(localSkillDir,'SKILL.md'),'---\nname: existing-user-fixture\ndescription: Verify preservation of a previously installed user skill.\n---\nSynthetic local skill for integration checks.\n');
 await fs.mkdir(dir+'/node_modules/@local',{recursive:true});await fs.mkdir(cwd,{recursive:true});
 await fs.symlink(bundleDir,path.join(dir,'node_modules',bundleName),'junction');
 const bundles=['@deepseek-ai/dsh-base','@deepseek-ai/dsh-web-app',bundleName];
@@ -48,6 +51,7 @@ let dispatched = 0;
 let receivedReplyBeforeTool = false;
 let campaignId;
 let catalogConfirmed = false;
+let localSkillConfirmed = false;
 class Adapter extends LlmAdapter {
   async *stream(options) {
     if (options.messages.some(message=>message.source?.kind==='ws-helper-ack-context')) {
@@ -57,6 +61,7 @@ class Adapter extends LlmAdapter {
       return;
     }
     if (options.messages.some(message=>message.source?.kind==='skill-catalog' && text(message).includes('kb-triage'))) catalogConfirmed = true;
+    if (options.messages.some(message=>message.source?.kind==='skill-catalog' && text(message).includes('existing-user-fixture'))) localSkillConfirmed = true;
     if (!options.messages.some(message=>message.role==='tool')) {
       const latest = options.messages.filter(message=>message.role==='user'&&message.source.kind==='user').map(text).at(-1);
       if (latest === 'NATIVE_TOOLS_QA') {
@@ -159,6 +164,7 @@ try {
   await api('campaigns',{action:'bind',id:campaign.item.id,sessionId:handle.agent.id});
   await settle(handle.agent);
   assert(catalogConfirmed,'Knowledge skills must reach the actual model request');
+  assert(localSkillConfirmed,'Existing local user skills must remain discoverable');
   assert.equal(auxiliaryCalls,before,'Automation must not trigger human acknowledgement');
   assert([...handle.agent.session.ownEvents()].some(event=>event.type==='user/message'&&event.data.source.kind==='fujiang-campaign'));
   await api('campaigns',{action:'advance',id:campaign.item.id});
