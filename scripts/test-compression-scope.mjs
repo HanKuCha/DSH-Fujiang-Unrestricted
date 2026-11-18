@@ -1,7 +1,20 @@
 import assert from 'node:assert/strict';
 import path from 'node:path';
-import { apply } from '../payload/dsh-ws-helper-preset/communication.mjs';
+import { apply, stripRawToolMarkup } from '../payload/dsh-ws-helper-preset/communication.mjs';
 import { apply as applyDiscovery } from '../payload/dsh-ws-helper-preset/tool-discovery.mjs';
+
+assert.equal(
+  stripRawToolMarkup('收到，先看文件本体。\n\n<｜｜DSML｜｜ calls>\n<｜｜DSML｜｜ invoke name="shell">\n<｜｜DSML｜｜ parameter name="command" string="true">Get-Item foo</｜｜DSML｜｜ parameter>\n</｜｜DSML｜｜ invoke>\n</｜｜DSML｜｜ calls>'),
+  '收到，先看文件本体。'
+);
+assert.equal(
+  stripRawToolMarkup('<｜DSML｜function_calls><｜DSML｜invoke name="shell"></｜DSML｜invoke></｜DSML｜function_calls>'),
+  ''
+);
+assert.equal(
+  stripRawToolMarkup('收到，准备检查。<tool_call>{"name":"shell"}</tool_call>'),
+  '收到，准备检查。'
+);
 
 const anchor = path.join(process.env.LOCALAPPDATA, 'Programs/DeepSeek Harness/resources/app.asar/dsh/node_modules/@deepseek-ai/dsh/package.json');
 const handlers = new Map();

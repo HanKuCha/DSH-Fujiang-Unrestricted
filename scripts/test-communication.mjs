@@ -34,12 +34,15 @@ class Adapter extends LlmAdapter{
   const aux=o.messages.some(m=>m.source?.kind==='ws-helper-ack-context');
   if(aux){
    assert(o.messages.some(m=>m.role==='system'&&text(m).includes('## Activation')),'Supplementary reply must inherit the active system prompt');
+   assert(!o.messages.some(m=>m.role==='system'&&text(m).includes('## DSH 工具工作手册')),'Supplementary reply must strip tool execution manuals');
    assert.equal(o.tools.length,0);assert(!o.toolHistory);assert(!o.sessionId);assert(o.messages.every(m=>m.role==='system'||m.role==='user'));
    const context=JSON.parse(text(o.messages.at(-1))),label=context.newUserMessages;
    auxiliary.push(label);
    if(label==='CASE:cancel'||label==='CASE:correct'){ready?.();await delay(5000,undefined,{signal:o.signal});}
    if(label==='CASE:aux-failure'){yield {type:'reasoning-delta',index:0,text:'仅思考，没有正文。'};yield {type:'finish',reason:{kind:'stop'}};return;}
    if(label==='CASE:aux-phantom'){yield {type:'block-end',index:0,block:{type:'tool-call',id:'must-not-run',name:'qa_probe',arguments:{}}};yield {type:'finish',reason:{kind:'tool-calls'}};return;}
+   if(label==='CASE:dsml-mixed'){yield {type:'text-delta',index:0,text:'收到，先看文件本体。\n\n<｜｜DSML｜｜ calls>\n<｜｜DSML｜｜ invoke name="shell">Get-Item foo</｜｜DSML｜｜ invoke>\n</｜｜DSML｜｜ calls>'};yield {type:'finish',reason:{kind:'stop'}};return;}
+   if(label==='CASE:aux-dsml-only'){yield {type:'text-delta',index:0,text:'<｜DSML｜function_calls><｜DSML｜invoke name="shell"></｜DSML｜invoke></｜DSML｜function_calls>'};yield {type:'finish',reason:{kind:'stop'}};return;}
    if(label==='CASE:aux-error')throw Error('isolated auxiliary API failed');
    yield {type:'text-delta',index:0,text:'收到，按最新要求继续核对：'+label};
    yield {type:'usage',usage:{inputTokens:7,outputTokens:5,totalTokens:12,cacheReadTokens:3}};
@@ -84,7 +87,7 @@ async function make(label,preset='ws-helper',parent){
 async function settle(a){let timer;try{await Promise.race([a.whenIdle(),new Promise((_,reject)=>timer=setTimeout(()=>reject(Error('fixture timeout')),12000))]);}finally{clearTimeout(timer);}const failures=[...a.session.ownEvents()].filter(e=>e.type==='turn/end'&&e.data.reason.kind==='error');assert.equal(failures.length,0,JSON.stringify(failures));}
 const report={runtime:runtimeVersion,realModelCalls:0,checks:[]};
 try{
- for(const label of ['normal','silent','stubborn','delta','parallel','aux-failure','aux-phantom','aux-error']){
+ for(const label of ['normal','silent','stubborn','delta','parallel','dsml-mixed','aux-failure','aux-phantom','aux-dsml-only','aux-error']){
   const h=await make(label);const before=auxiliary.length;try{
    h.agent.followup(user('CASE:'+label));await settle(h.agent);
    const events=[...h.agent.session.ownEvents()],calls=executed.filter(e=>e.session===h.agent.id);
@@ -98,7 +101,8 @@ try{
     const first=events.find(e=>e.type==='assistant/message');assert.equal(first.data.usage.inputTokens,107);assert.equal(first.data.usage.outputTokens,25);assert.equal(first.data.usage.totalTokens,132);assert.equal(first.data.usage.cacheReadTokens,53);
     assert(!first.data.message.source.replayState,'Changed block content must not retain mismatched replay metadata');
    }
-   if(label.startsWith('aux-'))assert(calls[0].reply.startsWith('[DSH 沟通提示]'),'Failure must be labeled as harness status');
+   if(label==='dsml-mixed'){assert.equal(calls[0].reply,'收到，先看文件本体。');assert(!calls[0].reply.includes('DSML'));}
+    if(label.startsWith('aux-'))assert(calls[0].reply.startsWith('[DSH 沟通提示]'),'Failure must be labeled as harness status');
    report.checks.push(label+': reply-before-original-tools-no-pause-no-replan');
   }finally{await h.dispose();}
  }

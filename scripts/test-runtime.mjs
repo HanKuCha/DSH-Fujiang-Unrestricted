@@ -147,8 +147,8 @@ try {
   assert.notEqual(shutdownResponse.status, 200);
   checks.push('bundled-default-style-and-address-adjustments');
   assert(defaults.text.includes('不同事项用空行分成自然段'));
-  assert(defaults.text.includes('不设置字数、句数或段落数量目标'));
-  assert(defaults.text.includes('完整代码或报告按要求完整交付'));
+  assert(defaults.text.includes('不卡死固定字数上限'));
+  assert(defaults.text.includes('完整代码或报告时不受四到六句话限制，完整交付'));
   assert(!defaults.text.includes('The structure is principle -> steps -> implementation -> verification'));
   checks.push('concise-final-default-with-complete-artifact-exception');
 

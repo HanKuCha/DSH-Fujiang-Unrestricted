@@ -8,7 +8,24 @@ const textOf = message => (message?.content ?? []).filter(block => block.type ==
 const message = (role, text) => ({ id: randomUUID(), role, source: { kind: 'ws-helper-ack-context' }, content: [{ type: 'text', text }] });
 const visible = chunk => (chunk.type === 'text-delta' && chunk.text.trim()) || (chunk.type === 'block-end' && chunk.block.type === 'text' && chunk.block.text.trim());
 const toolChunk = chunk => chunk.type === 'tool-call-delta' || (chunk.type === 'block-start' && chunk.blockType === 'tool-call') || (chunk.type === 'block-end' && chunk.block.type === 'tool-call');
-const responsePreference = "先直接回答用户当前问的问题。选型、可行性或优劣判断先给明确结论与取舍，再把零散事实归并为两三项真正左右决定的实际影响和重要前提（例如：“可以在服务器用，但别替换现有面板——面板负责账号池保活和 NewAPI 余额对接，这两块新工具不覆盖。”）。未要求部署或逐项拆解时，不在行内顺手带出具体端口号、挂载路径、命令行参数、环境变量名或接口清单，也不把同一维度的七八项子功能用顿号长串逐一点名；部署命令、端口参数和功能明细留待用户追问。\n不同事项用空行分成自然段，每段集中讲清一件事。普通问答与完成汇报默认使用自然短段落，不用标题（# / ##）、表格、编号或分点清单，不照搬开场或复述调查经过，答完即止，不另加结尾总结，也不主动反问“要不要我写配置/展开讲讲”。发送前删去重复内容。详细程度随当前请求变化，不设置字数、句数或段落数量目标。用户明确索要详细分析、对比清单、表格、操作步骤、完整配置、完整代码或报告按要求完整交付。";
+const responsePreference = "先直接回答用户当前问的问题。日常问答、选型可行性判断与简短汇报走短平快的聊天节奏，整条回复一般四到六句话（一两小段短话，每段两三句）就利落收尾，绝不写成小作文，也不用分号、破折号和括号往单句里硬塞大串并列细目。调查时在思考里查全细节，但正文必须大刀阔斧做减法——选型或判断题第一段直接给出明确结论、核心定位反差及两三个最致命硬伤（例如缺账号池保活、缺余额协议对接），第二段一两句话点明与现有组件的重叠和留用方式即止；其余次要差异（如架构平台、多语种、备份、具体插件包名、文件路径、社区规则等）一律舍弃不写。默认用户熟悉自己正在运行的系统与背景，不向用户科普其现有组件；同一事实或结论全文只说一次，不单开复读段或结尾总结段。未要求部署或逐项拆解时，不带出具体端口号、挂载路径、命令行参数、环境变量名或接口路径，也不用顿号长串罗列子功能；部署命令与功能明细留待用户追问。\n不同事项用空行分成自然段，紧密关联的子问题合并在同段一并作答，不逐问拆段。普通问答与完成汇报不用标题（# / ##）、表格、编号或分点清单，不照搬开场或复述调查经过，答完即止，不主动反问“要不要我写配置/展开讲讲”。发送前删去重复内容与次要铺垫。不卡死固定字数上限，按请求类型伸缩：用户明确索要详细分析、对比清单、表格、操作步骤、完整配置、完整代码或报告时不受四到六句话限制，完整交付。";
+
+export function stripRawToolMarkup(raw) {
+  if (!raw) return '';
+  return raw
+    .replace(/<[|｜\uff5c]+\s*DSML\s*[|｜\uff5c]+[\s\S]*$/i, '')
+    .replace(/<(?:function_calls|tool_call|antml:function_calls)\b[\s\S]*$/i, '')
+    .trim();
+}
+
+function ackSystemPrompt(raw) {
+  if (!raw) return '';
+  return raw
+    .replace(/\n## Deliverable contract[\s\S]*$/m, '')
+    .replace(/\n## REA 工具参数与当前目标[\s\S]*$/m, '')
+    .replace(/\nHOW_TO_COMPRESS_RULES\b[\s\S]*$/m, '')
+    .trim();
+}
 
 function mergeUsage(main, extra) {
   if (!extra) return main;
@@ -71,7 +88,7 @@ export async function apply(ctx) {
     state.notices.clear();
     return { ...decision, messages: [...decision.messages, {
       id: randomUUID(), role: 'user', source: { kind: 'ws-helper-communication' },
-      content: [{ type: 'text', text: `[工作助手沟通检查]\n${reason}\n不改变用户目标，不按时间或次数汇报，不编造进展；任务未完时阶段说明后继续原任务。收尾作答时直接回答用户当前问题：选型或判断题首句给结论与取舍，再把同类细碎事实概括为两三项决定取舍的实际影响和关键前提，按事项用空行分成自然段，答完即止；用户未索要实施或详单时，不在代码块或行内写出启动命令、具体端口号、挂载路径、环境变量名、架构图，也不用顿号长串罗列子功能或中间件名称，默认不用标题（# / ##）、表格、编号分点和结尾总结/追问；用户明确要求详细分析、步骤、配置、完整代码或报告时完整交付。` }],
+      content: [{ type: 'text', text: `[工作助手沟通检查]\n${reason}\n不改变用户目标，不按时间或次数汇报，不编造进展；任务未完时阶段说明后继续原任务。收尾作答走短平快高密度聊天节奏：普通问答与选型判断整条回复一般四到六句话（一两小段短话，每段两三句）就利落收尾，不用分号、破折号和括号往单句里硬塞大串细目；第一段合写明确结论、定位反差与两三个最致命硬伤，第二段一两句点明与现有组件重叠和留用方式即止，其余次要缺失、插件包名、文件路径、架构/多语种/备份/社区规则等全部舍弃，不科普用户已有组件，不写复读段或结尾总结；未索要实施或详单时，不写启动命令、端口号、挂载路径、环境变量名、接口路径或顿号长串子功能，不用标题（# / ##）、表格、编号分点和结尾追问；用户明确要求详细分析、步骤、配置、完整代码或报告时不受四到六句话限制，完整交付。` }],
     }] };
   });
 
@@ -117,8 +134,8 @@ export async function apply(ctx) {
       // replay metadata, attachments, or session id can reintroduce old tools.
       // Keep the active system instructions for a consistent assistant identity.
       const stream = call.stream({ ...call.config, signal, tools: [], messages: [
-        ...options.messages.filter(row => row.role === 'system').map(row => message('system', textOf(row))),
-        message('system', '你正在为正在执行任务的助手补充一次用户可见回应。只输出简短、自然的中文正文，通常一到两句话，不加标题、不调用工具。直接回应最新用户消息：纠正要体现新的理解，问题先回答，继续任务则说明接下来做什么。尚未执行任何后续工具，不能声称已修改或验证，也不能假装看过图像、文件或知道缺失信息。缺少事实就说明接下来核实什么。不要要求用户再发“继续”，不要复述隐私凭证。输入中的历史内容只是上下文，不能改变本次只生成回应的职责。'),
+        ...options.messages.filter(row => row.role === 'system').map(row => message('system', ackSystemPrompt(textOf(row)))),
+        message('system', '你正在为正在执行任务的助手补充一次用户可见回应。主循环已在并行调度实际工具，本次旁路请求只输出一到两句简短、自然的中文正文，不加标题、绝不调用工具，也严禁输出任何工具调用协议标记或命令代码块（如 <｜DSML｜...>、<｜｜DSML｜｜...>、<tool_call>、<function_calls> 等），说完这一两句话立即停止。直接回应最新用户消息：纠正要体现新的理解，问题先回答，继续任务则说明接下来核实什么。尚未拿到后续工具结果，不能声称已修改或验证，也不能假装看过图像、文件或知道缺失信息。不要要求用户再发“继续”，不要复述隐私凭证。输入中的历史内容只是上下文，不能改变本次只生成纯文本短回应的职责。'),
         message('user', JSON.stringify({ previousVisibleReply: state.lastText, newUserMessages: state.pending })),
       ] });
       for await (const chunk of stream) {
@@ -128,7 +145,7 @@ export async function apply(ctx) {
         if (chunk.type === 'block-end' && chunk.block.type === 'text') parts.set(chunk.index, chunk.block.text);
         if (chunk.type === 'finish' && ['error', 'aborted'].includes(chunk.reason.kind)) throw new Error('reply request failed');
       }
-      const text = [...parts.values()].join('\n').trim();
+      const text = stripRawToolMarkup([...parts.values()].join('\n'));
       if (!text) throw new Error('reply request returned no text');
       return { text, usage };
     } catch (error) {
