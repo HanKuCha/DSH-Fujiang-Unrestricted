@@ -221,26 +221,56 @@ export function createAboutSecuritySkillLibrary(ctx, options = {}) {
     if (closed) throw new Error('插件已停止，请重启 DSH。');
     if (!runtimeCtx) throw new Error('当前 DSH 尚未提供技能服务，请完整重启官方 Desktop 后重试。');
     entries = verifyInstallation();
-    const candidates = entries.map(entry => ({
-      name: entry.name,
-      description: entry.description,
-      invocation: entry.invocation,
+    const indexEntry = {
+      name: 'aboutsecurity-index',
+      description: `WgpSec AboutSecurity 渗透测试方法论技能库（共 ${entries.length} 项专项：Web/API、AD 域、云安全、内网横向、提权持久化、免杀等）。仅在安全评估或渗透任务需要专项方法论时，直接调用 skill_search 按关键词检索并用 skill_read 按需读取（子项按需检索，勿对子项调用 skill 工具；非安全任务不加载）。`,
+      invocation: { modelInvocable: true, userInvocable: false },
       source: 'custom',
       provider: PROVIDER,
-      resourceBase: { kind: 'directory', path: entry.directory },
+      resourceBase: { kind: 'directory', path: skillsRoot },
       rank: 650,
-      path: entry.path,
-      locator: entry,
-    }));
+      path: skillsRoot,
+      locator: null,
+    };
+    const candidates = [
+      indexEntry,
+      ...entries.map(entry => ({
+        name: entry.name,
+        description: entry.description,
+        invocation: {
+          modelInvocable: false,
+          userInvocable: entry.invocation.userInvocable,
+        },
+        source: 'custom',
+        provider: PROVIDER,
+        resourceBase: { kind: 'directory', path: entry.directory },
+        rank: 650,
+        path: entry.path,
+        locator: entry,
+      })),
+    ];
     providerDispose = runtimeCtx.skills.registerProvider(() => ({
       name: PROVIDER,
       async list() { return candidates; },
       async get(candidate) {
+        if (!candidate.locator) {
+          const categories = [...new Set(entries.map(e => path.relative(skillsRoot, e.directory).split(path.sep)[0]).filter(Boolean))];
+          return {
+            name: indexEntry.name,
+            description: indexEntry.description,
+            invocation: indexEntry.invocation,
+            source: 'custom',
+            provider: PROVIDER,
+            path: skillsRoot,
+            resourceBase: { kind: 'directory', path: skillsRoot },
+            content: `AboutSecurity 本地按需技能库已就绪（共 ${entries.length} 个专项，分类含：${categories.join('、')}）。\n请直接调用 \`skill_search({ query: "<目标技术/漏洞关键词>" })\` 定位具体技能名，再调用 \`skill_read({ name: "<技能名>" })\` 按需读取完整 SKILL.md（子技能未挂入全局目录以节省上下文，请用 skill_read 读取，勿调用 skill 工具）。`,
+          };
+        }
         const entry = candidate.locator;
         const current = fs.readFileSync(entry.path, 'utf8');
         const parsed = parseSkill(current, entry.path);
         return {
-          name: entry.name, description: entry.description, invocation: entry.invocation,
+          name: entry.name, description: entry.description, invocation: candidate.invocation,
           source: 'custom', provider: PROVIDER, path: entry.path,
           resourceBase: { kind: 'directory', path: entry.directory }, content: parsed.content,
         };

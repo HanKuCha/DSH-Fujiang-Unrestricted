@@ -1,4 +1,4 @@
-﻿using Microsoft.Win32;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -16,8 +16,8 @@ using System.Collections;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-[assembly: System.Reflection.AssemblyVersion("1.4.5.0")]
-[assembly: System.Reflection.AssemblyFileVersion("1.4.5.0")]
+[assembly: System.Reflection.AssemblyVersion("1.4.6.0")]
+[assembly: System.Reflection.AssemblyFileVersion("1.4.6.0")]
 [assembly: System.Reflection.AssemblyProduct("DSH Fujiang Unrestricted")]
 
 namespace DSHFujiangInstaller
@@ -26,7 +26,7 @@ namespace DSHFujiangInstaller
     {
         private const string ProductName = "DSH Fujiang Unrestricted";
         private const string PackageName = "@local/dsh-ws-helper-preset";
-        private const string ExpectedPresetSha256 = "0C56E7D96492964BB1CE03A5912568410275FB529A4E6B83E8F5B11220A463E3";
+        private const string ExpectedPresetSha256 = "E724743509791FBA76F7ED2227EEC18FA046D73DE54DD9D23F06E9241E1E3067";
 
         [STAThread]
         private static void Main(string[] args)

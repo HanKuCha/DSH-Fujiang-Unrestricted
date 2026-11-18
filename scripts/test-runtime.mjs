@@ -19,6 +19,13 @@ process.env.DSH_HOME=home;
 const localSkillDir=path.join(home,'skills','existing-user-fixture');
 await fs.mkdir(localSkillDir,{recursive:true});
 await fs.writeFile(path.join(localSkillDir,'SKILL.md'),'---\nname: existing-user-fixture\ndescription: Verify preservation of a previously installed user skill.\n---\nSynthetic local skill for integration checks.\n');
+const fujiangRoot=path.join(home,'fujiang-skills');
+const aboutSkillDir=path.join(fujiangRoot,'aboutsecurity','skills','active-directory','synthetic-ad-attack');
+await fs.mkdir(aboutSkillDir,{recursive:true});
+await fs.writeFile(path.join(fujiangRoot,'.fujiang-owner.json'),JSON.stringify({owner:'dsh-prompt-custom:skill-library:v1'}));
+await fs.writeFile(path.join(fujiangRoot,'aboutsecurity','.fujiang-owner.json'),JSON.stringify({owner:'dsh-prompt-custom:skill-library:v1'}));
+await fs.writeFile(path.join(fujiangRoot,'aboutsecurity-state.json'),JSON.stringify({schema:1,enabled:true}));
+await fs.writeFile(path.join(aboutSkillDir,'SKILL.md'),'---\nname: synthetic-ad-attack\ndescription: Synthetic AD methodology fixture that must stay out of Turn-1 skill-catalog.\n---\n'+'# Synthetic AD Attack\n'+('AD_METHODOLOGY_LINE '.repeat(280))+'\nEND_OF_LONG_SKILL_MARKER\n');
 await fs.mkdir(dir+'/node_modules/@local',{recursive:true});await fs.mkdir(cwd,{recursive:true});
 await fs.symlink(bundleDir,path.join(dir,'node_modules',bundleName),'junction');
 const bundles=['@deepseek-ai/dsh-base','@deepseek-ai/dsh-web-app',bundleName];
@@ -55,6 +62,8 @@ let receivedReplyBeforeTool = false;
 let campaignId;
 let catalogConfirmed = false;
 let localSkillConfirmed = false;
+let aboutIndexConfirmed = false;
+let aboutLeafLeaked = false;
 class Adapter extends LlmAdapter {
   async *stream(options) {
     if (options.messages.some(message=>message.source?.kind==='ws-helper-ack-context')) {
@@ -65,13 +74,15 @@ class Adapter extends LlmAdapter {
     }
     if (options.messages.some(message=>message.source?.kind==='skill-catalog' && text(message).includes('kb-triage'))) catalogConfirmed = true;
     if (options.messages.some(message=>message.source?.kind==='skill-catalog' && text(message).includes('existing-user-fixture'))) localSkillConfirmed = true;
+    if (options.messages.some(message=>message.source?.kind==='skill-catalog' && text(message).includes('aboutsecurity-index'))) aboutIndexConfirmed = true;
+    if (options.messages.some(message=>message.source?.kind==='skill-catalog' && text(message).includes('synthetic-ad-attack'))) aboutLeafLeaked = true;
     if (!options.messages.some(message=>message.role==='tool')) {
       const latest = options.messages.filter(message=>message.role==='user'&&message.source.kind==='user').map(text).at(-1);
       if (latest === 'NATIVE_TOOLS_QA') {
         const calls = [
           ['kb_match',{banner:'Apache Tomcat',product:'Tomcat',port:8080}],
-          ['skill_search',{query:'triage',limit:2}],
-          ['skill_read',{name:'kb-triage',maxBytes:1000}],
+          ['skill_search',{query:'synthetic-ad-attack',limit:2}],
+          ['skill_read',{name:'synthetic-ad-attack'}],
           ['finding_upsert',{title:'Native QA finding',severity:'info',target:'example.invalid',evidence:'Synthetic record',verified:false}],
           ['campaign_upsert',{campaignId,command:'in-memory fixture',result:'Native bookkeeping verified'}],
           ['pipeline_next',{campaignId}],
@@ -166,9 +177,11 @@ try {
   campaignId = campaign.item.id;
   const handle=await make();
   let assembly=await ctx.systemPrompt.assemble({agent:handle.agent,scope:handle.agent});
-  for(const name of ['kb_match','campaign_upsert','finding_upsert','skill_search','skill_read','pipeline_next','list_agents','subagent']) {
+  for(const name of ['kb_match','campaign_upsert','finding_upsert','skill_search','skill_read','pipeline_next','list_agents','subagent','list_subagent_models']) {
     assert(assembly.tools.some(tool=>tool.name===name),'Missing native tool '+name);
   }
+  const subagentSchema = JSON.stringify(assembly.tools.find(tool=>tool.name==='subagent')?.parameters ?? {});
+  assert(subagentSchema.includes('"provider"') && subagentSchema.includes('"model"'), 'ws-helper subagent must expose provider/model selection parameters');
   checks.push('upstream-six-tools-and-native-subagent-catalog');
 
   const initial=await api('preview');
@@ -191,6 +204,12 @@ try {
   await settle(handle.agent);
   assert(catalogConfirmed,'Knowledge skills must reach the actual model request');
   assert(localSkillConfirmed,'Existing local user skills must remain discoverable');
+  assert(aboutIndexConfirmed,'AboutSecurity compact index gateway must reach skill-catalog');
+  assert(!aboutLeafLeaked,'AboutSecurity leaf skills must not bloat Turn-1 skill-catalog');
+  const fullSnapshot = await ctx.skills.snapshot({cwd, scope: handle.agent});
+  const leafSkill = fullSnapshot.skills.find(s => s.name === 'synthetic-ad-attack');
+  assert(leafSkill && leafSkill.invocation.userInvocable === true && leafSkill.invocation.modelInvocable === false, 'AboutSecurity leaf skills must remain user-invocable while modelInvocable=false');
+  checks.push('aboutsecurity-on-demand-gateway-without-catalog-bloat');
   assert.equal(auxiliaryCalls,before,'Automation must not trigger human acknowledgement');
   assert([...handle.agent.session.ownEvents()].some(event=>event.type==='user/message'&&event.data.source.kind==='fujiang-campaign'));
   await api('campaigns',{action:'advance',id:campaign.item.id});
@@ -211,6 +230,9 @@ try {
   const results = [...native.agent.session.ownEvents()].filter(event=>event.type==='tool/result');
   assert.equal(results.length,6);
   assert(results.every(event=>!event.data.message.isError),JSON.stringify(results));
+  const skillReadResult = text(results[2].data.message);
+  assert(skillReadResult.includes('[Base directory:'), 'skill_read must expose skill base directory');
+  assert(skillReadResult.includes('END_OF_LONG_SKILL_MARKER') && skillReadResult.length > 5000, 'skill_read must not truncate SKILL.md at 4000 chars');
   checks.push('all-six-upstream-tools-executed-through-native-agent-loop');
   await api('campaigns',{action:'done',id:campaign.item.id,note:'Fixture complete'});
   const report={runtime:runtimeVersion,bundle:bundleName,realModelCalls:0,knowledgeEntries:knowledge.total,checks};

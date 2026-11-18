@@ -332,17 +332,17 @@ export function createSkillIndex({ home, knowledgeDir, knowledgeEnabled = () => 
     return scored.slice(0, Math.max(1, Math.min(20, Number(limit) || 8))).map((x) => ({ name: x.item.name, category: x.item.category, source: x.item.source, description: x.item.description.slice(0, 200), path: x.item.path, score: x.score }));
   }
 
-  function read(nameOrPath, maxBytes = 12000) {
+  function read(nameOrPath, maxBytes = 24000) {
     const key = String(nameOrPath || '').trim();
     if (!key) throw new Error('需要技能名或路径。');
-    const resolvedKey = path.resolve(key);
+    const limit = Math.max(500, Math.min(64000, Number(maxBytes) || 24000)); const resolvedKey = path.resolve(key);
     const entries = list();
     const hit = entries.find((x) => x.name === key)
       || entries.find((x) => x.name.toLowerCase() === key.toLowerCase())
       || entries.find((x) => path.resolve(x.path) === resolvedKey);
     if (!hit) throw new Error('没有这个技能：' + key + '（先用 skill_search 搜一下）');
     const text = fs.readFileSync(hit.path, 'utf8');
-    return { name: hit.name, source: hit.source, path: hit.path, content: text.slice(0, maxBytes), truncated: text.length > maxBytes };
+    return { name: hit.name, source: hit.source, path: hit.path, content: text.slice(0, limit), truncated: text.length > limit };
   }
 
   return { search, read, size: () => list().length, reset: () => {} };
@@ -690,7 +690,7 @@ export async function registerAutomationTools(ctx, { kbIndex, campaigns, finding
         },
         {
           name: 'skill_search',
-          description: '按关键词搜索本地技能库（AboutSecurity 方法论 + 知识库分类），不依赖会话目录。返回 name/category/source/path。',
+          description: '按关键词搜索本地技能库（AboutSecurity 方法论 + 知识库分类与条目），不依赖会话目录。返回 name/category/source/path；命中后用 skill_read({ name }) 读取正文（勿调用 skill 工具）。',
           parameters: { query: text('关键词，例如 sqli / ad / privilege / 反序列化'), limit: { type: 'number', description: '返回条数（默认 8）' } },
           output: { schema: schema({ hits: { type: 'array', required: true, items: { type: 'object', additionalProperties: true } } }), render: (args, value) => [{ type: 'text', text: JSON.stringify(value).slice(0, 4000) }] },
           execute: async (args) => ({ hits: skillIndex.search(args.query, args.limit) }),
@@ -698,8 +698,8 @@ export async function registerAutomationTools(ctx, { kbIndex, campaigns, finding
         {
           name: 'skill_read',
           description: '读取一个技能的 SKILL.md 正文（先用 skill_search 找到名字或 path）。',
-          parameters: { name: text('技能名或绝对路径'), maxBytes: { type: 'number', description: '最多返回多少字符（默认 12000）' } },
-          output: { schema: schema({ name: { type: 'string', required: true }, path: { type: 'string', required: true }, content: { type: 'string', required: true }, source: { type: 'string' }, truncated: { type: 'boolean' } }), render: (args, value) => [{ type: 'text', text: String(value.content || '').slice(0, 4000) }] },
+          parameters: { name: text('技能名或绝对路径'), maxBytes: { type: 'number', description: '最多返回多少字符（默认 24000，最大 64000）' } },
+          output: { schema: schema({ name: { type: 'string', required: true }, path: { type: 'string', required: true }, content: { type: 'string', required: true }, source: { type: 'string' }, truncated: { type: 'boolean' } }), render: (args, value) => [{ type: 'text', text: '[Base directory: ' + path.dirname(value.path) + ']\n' + String(value.content || '').slice(0, 64000) + (value.truncated ? '\n[...truncated, increase maxBytes or use read tool on ' + value.path + '...]' : '') }] },
           execute: async (args) => skillIndex.read(args.name, args.maxBytes),
         },        {
           name: 'pipeline_next',

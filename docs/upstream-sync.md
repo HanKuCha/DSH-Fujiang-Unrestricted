@@ -51,3 +51,7 @@
 ## 1.4.5 后续调整
 
 进一步压缩日常问答与选型评估的段落膨胀与复读（首段合并结论与核心差异，省略对用户已有组件的科普、重复损失罗列和结尾二次总结）；剥离 `communication.mjs` 补回应旁路请求中的冗余工具手册提示词，并增加原生 DSML/XML 工具调用标记清洗，消除无工具列表时反代透传 `<｜｜DSML｜｜>` 文本的问题。
+
+## 1.4.6 后续调整
+
+将 `aboutsecurity.js` 的方法论子技能改为真正的按需加载：向 `<available_skills>` 仅暴露单条 `aboutsecurity-index` 入口摘要，子技能设为 `modelInvocable: false, userInvocable: true`（保留 `/` 面板手工选择能力，同时省去新会话首轮约 52.6 KB 目录注入），引导模型通过 `skill_search` + `skill_read` 按需检索；解除 `automation.js` 中 `skill_read` 4,000 字符渲染截断（默认提升至 24,000 字符、最高 64,000 字符，并附带技能目录根路径）；并在工作助手 `tool-subagent` 中同步补齐 DSH 0.2.2 的 `modelSelection: true` 与 `modelDiscovery: true`，使子代理模型白名单与显式渠道切换真正生效。

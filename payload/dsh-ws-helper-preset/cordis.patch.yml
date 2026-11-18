@@ -146,6 +146,8 @@
                 config:
                   provider: spawn
                   toolName: subagent
+                  modelSelection: true
+                  modelDiscovery: true
                   modelSelectionSettings: true
                   backgroundMode: continuable
 
