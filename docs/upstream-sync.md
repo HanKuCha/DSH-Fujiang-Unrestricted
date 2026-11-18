@@ -55,3 +55,7 @@
 ## 1.4.6 后续调整
 
 将 `aboutsecurity.js` 的方法论子技能改为真正的按需加载：向 `<available_skills>` 仅暴露单条 `aboutsecurity-index` 入口摘要，子技能设为 `modelInvocable: false, userInvocable: true`（保留 `/` 面板手工选择能力，同时省去新会话首轮约 52.6 KB 目录注入），引导模型通过 `skill_search` + `skill_read` 按需检索；解除 `automation.js` 中 `skill_read` 4,000 字符渲染截断（默认提升至 24,000 字符、最高 64,000 字符，并附带技能目录根路径）；并在工作助手 `tool-subagent` 中同步补齐 DSH 0.2.2 的 `modelSelection: true` 与 `modelDiscovery: true`，使子代理模型白名单与显式渠道切换真正生效。
+
+## 1.4.7 后续调整
+
+在 `tool-discovery.mjs` 的 `assembleWithGuidance` 层同步执行外部 MCP 工具按需裁剪，修复 DSH 0.2.2 下 `systemPrompt.assemble()` 直接收集全量工具 Schema 导致 250+ 个 REA 工具在首轮全量下发（约 95 KB / ~22k tokens）的问题；为工作助手预设补齐 DSH 0.2.2 的 `time-context`、`tool-schedule`、`command-goal`、`tool-office` 与 `tool-plugin-manager`（均带 0.2.1 缺失兼容守卫）；更新安装器界面文案并在 CLI 依赖同步时注入 `PNPM_CONFIG_MINIMUM_RELEASE_AGE=0`，避免本机其他插件热更处于 24 小时等待期时阻塞安装。

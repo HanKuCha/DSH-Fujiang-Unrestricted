@@ -1,4 +1,4 @@
-DSH Fujiang Unrestricted v1.4.6
+DSH Fujiang Unrestricted v1.4.7
 
 Windows Desktop 安装
 1. 先启动一次 DSH，完成 Desktop profile 初始化。

@@ -86,6 +86,7 @@ class Adapter extends LlmAdapter {
           ['finding_upsert',{title:'Native QA finding',severity:'info',target:'example.invalid',evidence:'Synthetic record',verified:false}],
           ['campaign_upsert',{campaignId,command:'in-memory fixture',result:'Native bookkeeping verified'}],
           ['pipeline_next',{campaignId}],
+          ['ws_helper_find_tools',{query:'heavy_procedure_dump',limit:3}],
         ];
         for (const [index,[name,args]] of calls.entries()) {
           yield {type:'block-end',index,block:{type:'tool-call',id:'native-'+index,name,arguments:args}};
@@ -117,6 +118,16 @@ async function make(preset='ws-helper') {
           receivedReplyBeforeTool=[...execution.agent.session.ownEvents()].some(event=>event.type==='assistant/message' && text(event.data.message));
           return 'fixture evidence';
         },
+      }));
+      agent.tools.register(defineTool({
+        name:'mcp__qa__open_binary', description:'MCP entry point fixture.', parameters:{},
+        output:{schema:{type:'string'},render:(_args,value)=>[{type:'text',text:value}]},
+        execute:async()=>'opened',
+      }));
+      agent.tools.register(defineTool({
+        name:'mcp__qa__heavy_procedure_dump', description:'Heavy non-entry MCP tool fixture that must stay out of initial assembly.', parameters:{},
+        output:{schema:{type:'string'},render:(_args,value)=>[{type:'text',text:value}]},
+        execute:async()=>'dumped',
       }));
     },
   });
@@ -182,6 +193,8 @@ try {
   }
   const subagentSchema = JSON.stringify(assembly.tools.find(tool=>tool.name==='subagent')?.parameters ?? {});
   assert(subagentSchema.includes('"provider"') && subagentSchema.includes('"model"'), 'ws-helper subagent must expose provider/model selection parameters');
+  assert(assembly.tools.some(tool=>tool.name==='mcp__qa__open_binary'), 'Entry-point MCP tools must stay visible on Turn 1');
+  assert(!assembly.tools.some(tool=>tool.name==='mcp__qa__heavy_procedure_dump'), 'Non-entry MCP tools must be filtered out of Turn-1 assembly');
   checks.push('upstream-six-tools-and-native-subagent-catalog');
 
   const initial=await api('preview');
@@ -228,11 +241,14 @@ try {
   native.agent.followup(createUserMessage({source:{kind:'user'},content:[{type:'text',text:'NATIVE_TOOLS_QA'}]}));
   await settle(native.agent);
   const results = [...native.agent.session.ownEvents()].filter(event=>event.type==='tool/result');
-  assert.equal(results.length,6);
+  assert.equal(results.length,7);
   assert(results.every(event=>!event.data.message.isError),JSON.stringify(results));
   const skillReadResult = text(results[2].data.message);
   assert(skillReadResult.includes('[Base directory:'), 'skill_read must expose skill base directory');
   assert(skillReadResult.includes('END_OF_LONG_SKILL_MARKER') && skillReadResult.length > 5000, 'skill_read must not truncate SKILL.md at 4000 chars');
+  const postDiscoveryAssembly = await ctx.systemPrompt.assemble({agent:native.agent,scope:native.agent});
+  assert(postDiscoveryAssembly.tools.some(tool=>tool.name==='mcp__qa__heavy_procedure_dump'), 'Discovered MCP tools must appear in subsequent assembly');
+  checks.push('on-demand-mcp-tool-filtering-and-discovery-verified');
   checks.push('all-six-upstream-tools-executed-through-native-agent-loop');
   await api('campaigns',{action:'done',id:campaign.item.id,note:'Fixture complete'});
   const report={runtime:runtimeVersion,bundle:bundleName,realModelCalls:0,knowledgeEntries:knowledge.total,checks};

@@ -16,8 +16,8 @@ using System.Collections;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-[assembly: System.Reflection.AssemblyVersion("1.4.6.0")]
-[assembly: System.Reflection.AssemblyFileVersion("1.4.6.0")]
+[assembly: System.Reflection.AssemblyVersion("1.4.7.0")]
+[assembly: System.Reflection.AssemblyFileVersion("1.4.7.0")]
 [assembly: System.Reflection.AssemblyProduct("DSH Fujiang Unrestricted")]
 
 namespace DSHFujiangInstaller
@@ -26,7 +26,7 @@ namespace DSHFujiangInstaller
     {
         private const string ProductName = "DSH Fujiang Unrestricted";
         private const string PackageName = "@local/dsh-ws-helper-preset";
-        private const string ExpectedPresetSha256 = "E724743509791FBA76F7ED2227EEC18FA046D73DE54DD9D23F06E9241E1E3067";
+        private const string ExpectedPresetSha256 = "E48AD11F752EB97E2A752D8F0D17798BCDCDE1D5F5EF90DEE770F251FD06E233";
 
         [STAThread]
         private static void Main(string[] args)
@@ -281,7 +281,7 @@ namespace DSHFujiangInstaller
                 BackColor = Color.FromArgb(231, 238, 247),
                 ForeColor = Color.FromArgb(30, 64, 110),
                 Padding = new Padding(10, 8, 10, 6),
-                Text = "安装协作版工作助手：主动澄清与汇报、DSH 工具与子代理指引、240 + 3 个技能；自动备份 Desktop profile。",
+                Text = "安装工作助手预设：可编辑富江人格、漏洞知识库、按需技能与 MCP 工具加载、子代理选模及插话回应；自动备份 Desktop profile。",
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
 
@@ -1066,6 +1066,7 @@ namespace DSHFujiangInstaller
             };
             info.EnvironmentVariables["DSH_HOME"] = dshHome;
             info.EnvironmentVariables["DSH_INSTALLER_CLI"] = cli;
+            info.EnvironmentVariables["PNPM_CONFIG_MINIMUM_RELEASE_AGE"] = "0";
             using (var process = Process.Start(info))
             {
                 if (process == null) throw new InvalidOperationException("无法启动 DSH CLI。");

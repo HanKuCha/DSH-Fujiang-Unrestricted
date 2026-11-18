@@ -1,6 +1,8 @@
 # DSH Fujiang Unrestricted
 
-富江 0.20.13 原版功能与可编辑人格，集成收到插话后先回应、再继续任务的协作模块。当前版本为 **1.4.6**，适用于 DeepSeek Harness Desktop 和 DSHA。
+富江 0.20.13 原版功能与可编辑人格，集成收到插话后先回应、再继续任务的协作模块。当前版本为 **1.4.7**，适用于 DeepSeek Harness Desktop 和 DSHA。
+
+1.4.7 修复 DSH 0.2.2 下 `systemPrompt.assemble()` 旁路 `tool-discovery` 导致 250+ 个外部 MCP（如 REA）工具 Schema 在首轮全量下发的问题（首轮仅保留 `open_binary`/`binary_session`/`inspect_artifact` 三个入口，其余按需通过 `ws_helper_find_tools` 加载，立省约 95 KB / ~22k tokens），补齐工作助手对 DSH 0.2.2 标准能力（时间上下文、定时计划、Office 文档工具、`/goal` 指令及插件管理工具）的兼容挂载，并在安装器同步依赖时自动豁免 pnpm 新包等待期限制。
 
 1.4.6 将 AboutSecurity 技能库改为真正的按需索引加载（不再于每轮首条请求向 `<available_skills>` 一次性注入全部 262 个子技能描述，首轮省下约 52.6 KB 上下文，同时完整保留 `/` 斜杠面板与 `skill_search` + `skill_read` 按需读取），解除 `skill_read` 的 4,000 字符截断并附带技能目录根路径，同时补齐 DSH 0.2.2 下工作助手 `subagent` 的跨渠道/模型选择与 `list_subagent_models` 支持。
 
@@ -33,7 +35,7 @@
 | 平台 | 下载 | 安装方式 |
 | --- | --- | --- |
 | Windows Desktop | `DSH-Fujiang-Installer.exe` 或桌面 ZIP | 完全退出 DSH 后运行 EXE，选择程序位置与 DSH_HOME |
-| DSHA 安卓 | `DSH-Fujiang-DSHA-v1.4.6.zip` | 在 DSHA 插件管理中导入本地包或使用该具体附件链接 |
+| DSHA 安卓 | `DSH-Fujiang-DSHA-v1.4.7.zip` | 在 DSHA 插件管理中导入本地包或使用该具体附件链接 |
 
 Windows EXE 内嵌完整插件与知识库，使用系统 .NET Framework 4.8。安装过程通过 Desktop 随附 CLI 注册插件。程序位置可填安装文件夹、`DeepSeek Harness.exe` 或随附的 `resources/runtime/cli/bin/dsh.cmd`，支持自定义磁盘与目录。
 

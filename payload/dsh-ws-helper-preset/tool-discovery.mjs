@@ -122,7 +122,9 @@ export async function apply(ctx) {
   async function assembleWithGuidance(context = {}) {
     const result = await assemble.call(this, context);
     if (!enabled(context.agent)) return result;
-    return { ...result, tools: result.tools.map(tool => {
+    const admitted = selection(context.agent);
+    const visible = result.tools.filter(tool => !external(tool.name) || entryPoint(tool.name) || admitted.has(tool.name));
+    return { ...result, tools: visible.map(tool => {
       if (tool.name === 'pwsh' || tool.name === 'bash') return { ...tool, description: tool.description + '\nUse this for quick commands. For builds, downloads, tests or other potentially slow work, open a terminal and use terminal_send with run_in_background=true, then collect with job_output.' };
       if (tool.name === 'terminal_send') return { ...tool, description: tool.description + '\nPrefer run_in_background=true for potentially slow commands so the conversation can accept corrections while work continues.' };
       if (tool.name === 'compress') {

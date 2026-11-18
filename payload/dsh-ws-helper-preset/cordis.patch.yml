@@ -24,6 +24,10 @@
             config:
               maxBytes: 65536
 
+          - id: time-context
+            name: '@deepseek-ai/dsh-time-context'
+            disabled: !!js "(() => { try { const a = ctx.get('profileContext')?.installAnchor; return a ? (process.getBuiltinModule('node:module').createRequire(a).resolve('@deepseek-ai/dsh-time-context'), false) : false; } catch { return true; } })()"
+
           - id: persistent-shell
             name: cordis:group
             group: true
@@ -78,11 +82,19 @@
               waitTimeoutMs: 10000
               maxWaitTimeoutMs: 10000
 
+          - id: tool-schedule
+            name: '@deepseek-ai/dsh-tool-schedule'
+            disabled: !!js "(() => { try { const a = ctx.get('profileContext')?.installAnchor; return a ? (process.getBuiltinModule('node:module').createRequire(a).resolve('@deepseek-ai/dsh-tool-schedule'), false) : false; } catch { return true; } })()"
+
           - id: skill-filesystem
             name: '@deepseek-ai/dsh-skill-filesystem'
 
           - id: tool-skill
             name: '@deepseek-ai/dsh-tool-skill'
+
+          - id: command-goal
+            name: '@deepseek-ai/dsh-command-goal'
+            disabled: !!js "(() => { try { const a = ctx.get('profileContext')?.installAnchor; return a ? (process.getBuiltinModule('node:module').createRequire(a).resolve('@deepseek-ai/dsh-command-goal'), false) : false; } catch { return true; } })()"
 
           - id: tool-goal
             name: '@deepseek-ai/dsh-tool-goal'
@@ -207,3 +219,11 @@
 
           - id: present
             name: '@deepseek-ai/dsh-tool-present'
+
+          - id: tool-office
+            name: '@deepseek-ai/dsh-tool-office'
+            disabled: !!js "(() => { try { const a = ctx.get('profileContext')?.installAnchor; return a ? (process.getBuiltinModule('node:module').createRequire(a).resolve('@deepseek-ai/dsh-tool-office'), false) : false; } catch { return true; } })()"
+
+          - id: tool-plugin-manager
+            name: '@deepseek-ai/dsh-plugin-manager/tools'
+            disabled: !!js "(() => { if (!ctx.get('profileContext')) return true; try { process.getBuiltinModule('node:module').createRequire(ctx.get('profileContext').installAnchor).resolve('@deepseek-ai/dsh-plugin-manager/tools'); return false; } catch { return true; } })()"
