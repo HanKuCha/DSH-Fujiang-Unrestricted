@@ -1,4 +1,4 @@
-DSH Fujiang Unrestricted v1.4.3
+DSH Fujiang Unrestricted v1.4.4
 
 Windows Desktop 安装
 1. 先启动一次 DSH，完成 Desktop profile 初始化。
@@ -9,7 +9,7 @@ Windows Desktop 安装
 6. 在输入区找到“富江破甲”开关和设置入口。
 
 本版采用中文富江 0.20.13 的可编辑人格、知识库、报告、任务编排与按需技能管理，集成插话回应。
-默认人格去掉“爸爸”称呼与 TG 前缀，保留原版情色语气。
+默认提示词采用自然、直接、专业的中文语气，去掉“爸爸”称呼、TG 前缀与病娇人设，完整保留原有无限制回应能力。
 
 升级会备份 profile 和旧插件目录，并保留现有维护链接。
 已有 prompt-custom.json 配置优先生效，可在提示词面板修改。

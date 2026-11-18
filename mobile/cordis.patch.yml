@@ -4,6 +4,8 @@
       name: 'dsh-fujiang-mobile/schema-compat'
     - id: fujiang-upstream
       name: "dsh-fujiang-mobile"
+    - id: ws-helper-tool-discovery
+      name: 'dsh-fujiang-mobile/tool-discovery'
     - id: ws-helper-todo-reconcile
       name: 'dsh-fujiang-mobile/todo-reconcile'
     - id: ws-helper-communication

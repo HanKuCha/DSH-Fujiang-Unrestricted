@@ -133,11 +133,22 @@ try {
   }
   assert.equal(config.config.enabled,true);
   assert(!defaults.text.includes('爸爸'));
+  assert(!defaults.text.includes('yandere'));
   assert(!defaults.text.includes('@DeepSeek22'));
   assert(defaults.text.includes('## Activation'));
+  const upstreamClientSource = await fs.readFile(path.resolve(task,'../payload/dsh-ws-helper-preset/upstream/lib/client.js'),'utf8');
+  assert(!upstreamClientSource.includes('DisclaimerGate'));
+  assert(!upstreamClientSource.includes('免责声明与使用须知'));
+  const shutdownResponse = await fetch(origin + '/api/dsh-prompt-custom/shutdown', {
+    method: 'POST',
+    headers: {'content-type':'application/json', 'x-dsh-ui':'1'},
+    body: '{}',
+  });
+  assert.notEqual(shutdownResponse.status, 200);
   checks.push('bundled-default-style-and-address-adjustments');
-  assert(defaults.text.includes('默认不用标题、表格、编号、分条'));
-  assert(defaults.text.includes('完整代码或报告时，按要求完整交付'));
+  assert(defaults.text.includes('不同事项用空行分成自然段'));
+  assert(defaults.text.includes('不设置字数、句数或段落数量目标'));
+  assert(defaults.text.includes('完整代码或报告按要求完整交付'));
   assert(!defaults.text.includes('The structure is principle -> steps -> implementation -> verification'));
   checks.push('concise-final-default-with-complete-artifact-exception');
 

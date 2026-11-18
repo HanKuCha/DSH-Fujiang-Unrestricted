@@ -1,6 +1,8 @@
 # DSH Fujiang Unrestricted
 
-富江 0.20.13 原版功能与可编辑人格，集成收到插话后先回应、再继续任务的协作模块。当前版本为 **1.4.3**，适用于 DeepSeek Harness Desktop 和 DSHA。
+富江 0.20.13 原版功能与可编辑人格，集成收到插话后先回应、再继续任务的协作模块。当前版本为 **1.4.4**，适用于 DeepSeek Harness Desktop 和 DSHA。
+
+1.4.4 移除启动免责声明弹窗与病娇语气设定，改为干练专业的直接风格；优化系统提示与上下文压缩衔接，普通问答与评估题先给取舍和关键影响，不再顺带输出未索要的部署命令、参数或长清单，要求详细说明或完整代码时按需完整交付；新增外部 MCP 按需工具发现与长任务后台执行引导。
 
 1.4.3 恢复本项目旧版默认人格与“自检”回应，结合上游功能面板、知识库和技能管理。补回应继承主助手系统提示词，恢复任务清单实时核对，并补充 REA 参数调用说明。已知旧默认文字会先备份再更新，用户自定义文字按原配置保留。
 
@@ -29,7 +31,7 @@
 | 平台 | 下载 | 安装方式 |
 | --- | --- | --- |
 | Windows Desktop | `DSH-Fujiang-Installer.exe` 或桌面 ZIP | 完全退出 DSH 后运行 EXE，选择程序位置与 DSH_HOME |
-| DSHA 安卓 | `DSH-Fujiang-DSHA-v1.4.3.zip` | 在 DSHA 插件管理中导入本地包或使用该具体附件链接 |
+| DSHA 安卓 | `DSH-Fujiang-DSHA-v1.4.4.zip` | 在 DSHA 插件管理中导入本地包或使用该具体附件链接 |
 
 Windows EXE 内嵌完整插件与知识库，使用系统 .NET Framework 4.8。安装过程通过 Desktop 随附 CLI 注册插件。程序位置可填安装文件夹、`DeepSeek Harness.exe` 或随附的 `resources/runtime/cli/bin/dsh.cmd`，支持自定义磁盘与目录。
 

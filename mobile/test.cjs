@@ -12,6 +12,8 @@ assert(!rows.find(row=>row.id==='preset-ws-helper').config.plugins.some(row=>row
 assert(rows.find(row=>row.id==='preset-ws-helper').config.plugins.some(row=>row.id==='skill-filesystem'));
 assert.equal(manifest.dsh.client.entry,'client');
 assert(fs.readFileSync(path.join(__dirname,'client.js'),'utf8').includes('id: "dsh-fujiang-mobile"'));
+assert(!fs.readFileSync(path.join(__dirname,'client.js'),'utf8').includes('DisclaimerGate'));
+assert(!fs.readFileSync(path.join(__dirname,'client.js'),'utf8').includes('免责声明与使用须知'));
 assert(!fs.readFileSync(path.join(__dirname,'cordis.patch.yml'),'utf8').includes('C:/Users/'));
 assert.equal(manifest.exports['./upstream'],'./payload/dsh-ws-helper-preset/upstream/lib/index.js');
 assert.equal(manifest.exports['.'],'./payload/dsh-ws-helper-preset/upstream/lib/index.js');

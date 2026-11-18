@@ -851,24 +851,6 @@ export function apply(ctx, config) {
       sendJson(res, 200, report);
     });
 
-    // 免责声明点「拒绝」时调用：先回包，再关掉整个 Harness。
-    route("/api/dsh-prompt-custom/shutdown", async (req, res) => {
-      if (!isLoopback(req)) { res.writeHead(403); res.end("forbidden"); return; }
-      if (req.method !== "POST") { res.writeHead(405, { allow: "POST" }); res.end(); return; }
-      const origin = req.headers?.origin;
-      if (origin) {
-        try {
-          const parsed = new URL(origin);
-          if (parsed.host !== req.headers.host || !["http:", "https:"].includes(parsed.protocol)) {
-            sendJson(res, 403, { ok: false, message: "forbidden origin" });
-            return;
-          }
-        } catch { sendJson(res, 403, { ok: false, message: "invalid origin" }); return; }
-      }
-      sendJson(res, 200, { ok: true, message: "shutting down" });
-      log("[dsh-prompt-custom] 用户拒绝免责声明，正在关闭 Harness");
-      setTimeout(() => { try { process.exit(0); } catch { } }, 500);
-    });
     // 指纹 → 知识库候选（本地索引，不联网）
     route(MATCH_ROUTE, async (req, res) => {
       if (!isLoopback(req)) { res.writeHead(403); res.end('forbidden'); return; }

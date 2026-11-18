@@ -1,6 +1,6 @@
 {
   "name": "dsh-fujiang-mobile",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "private": true,
   "description": "富江原版人格、功能面板、知识库、报告、任务编排与插话回应，适配 DSHA。",
   "author": "HanKuCha",
@@ -17,7 +17,8 @@
     "./communication": "./payload/dsh-ws-helper-preset/communication.mjs",
     "./schema-compat": "./payload/dsh-ws-helper-preset/schema-compat.mjs",
     "./client": "./mobile/client.js",
-    "./todo-reconcile": "./payload/dsh-ws-helper-preset/todo-reconcile.mjs"
+    "./todo-reconcile": "./payload/dsh-ws-helper-preset/todo-reconcile.mjs",
+    "./tool-discovery": "./payload/dsh-ws-helper-preset/tool-discovery.mjs"
   },
   "engines": {
     "node": ">=22.19.0",
